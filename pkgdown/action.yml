@@ -1,0 +1,70 @@
+name: Build package documentation
+description: use pkgdown to build and deploy package documentation
+inputs:
+    run-only:
+      description: Skip the setup steps and run directly, assuming that setup was run.
+      required: false
+      default: false
+    user-email:
+      description: E-mail address to which commit should be attributed
+      required: false
+      default: 'actions@github.com'
+    user-name:
+      description: User name to which commit should be attributed
+      required: false
+      default: 'GitHub Actions'
+    dependencies:
+      description: Comma-separated list of dependencies strings, used as
+        argument to remotes::install_deps
+      required: false
+      default: '"soft", "Config/Needs/website"'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v3
+
+    - uses: r-lib/actions/setup-r@v2
+
+    - uses: r-lib/actions/setup-pandoc@v2
+
+    - name: Query dependencies
+      run: |
+        install.packages('remotes')
+        saveRDS(remotes::dev_package_deps(
+          dependencies = c("${{ inputs.dependencies }}")),
+          ".github/depends.Rds", version = 2
+        )
+        writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
+      shell: Rscript {0}
+
+    - name: Cache R packages
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.R_LIBS_USER }}
+        key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
+        restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
+
+    - name: Install Mac OS dependencies
+      run: |
+        brew install libgit2
+        git config --local user.email "${{ inputs.user-email }}"
+        git config --local user.name "${{ inputs.user-name }}"
+
+    - name: Install dependencies
+      run: |
+        remotes::install_deps(
+          dependencies = c("${{ inputs.dependencies }}")
+        )
+      shell: Rscript {0}
+
+    - name: Install package
+      run: R CMD INSTALL .
+
+    - name: Build and deploy documentation
+      run: |
+        pkgdown::deploy_to_branch(new_process = FALSE)
+        if (length(warnings()) > 0) {
+          stop("Fail on warning")
+        }
+      shell: Rscript {0}
