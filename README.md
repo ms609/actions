@@ -13,5 +13,7 @@ to facilitate some common tasks.
 1. [ms609/actions/pkgdown.R](https://github.com/ms609/actions/tree/main/pkgdown):
   Create package documentation website with [pkgdown](https://pkgdown.r-lib.org/).
   Adapted from [r-lib example](https://github.com/r-lib/actions/tree/v2/examples#build-pkgdown-site).
+1. [ms609/actions/revdepcheck.R](https://github.com/ms609/actions/tree/main/revdepcheck):
+ Check reverse dependencies using [r-lib/revdepcheck](https://github.com/r-lib/revdepcheck).
 1. [ms609/actions/validate-ctv.R](https://github.com/ms609/actions/tree/main/validate-ctv):
   Ensure that CRAN task views are valid.
