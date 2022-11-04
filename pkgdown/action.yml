@@ -13,11 +13,6 @@ inputs:
       description: User name to which commit should be attributed
       required: false
       default: 'GitHub Actions'
-    dependencies:
-      description: Comma-separated list of dependencies strings, used as
-        argument to remotes::install_deps
-      required: false
-      default: '"soft", "Config/Needs/website"'
 
 runs:
   using: 'composite'
@@ -52,16 +47,10 @@ runs:
         git config --local user.name "${{ inputs.user-name }}"
       shell: bash
 
-    - name: Install dependencies
-      run: |
-        remotes::install_deps(
-          dependencies = c(${{ inputs.dependencies }})
-        )
-      shell: Rscript {0}
-
-    - name: Install package
-      run: R CMD INSTALL .
-      shell: bash
+    - uses: r-lib/actions/setup-r-dependencies@v2
+      with:
+        extra-packages: any::pkgdown, local::.
+        needs: website
 
     - name: Build and deploy documentation
       run: |
