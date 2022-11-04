@@ -4,7 +4,7 @@ inputs:
     user:
       description: Github repository containing task view
       required: false
-      default: cran-task-views
+      default: 'cran-task-views'
     task-view:
       description: Name of task view. Should match GitHub user name, and the name of TaskView.md.
       required: true
