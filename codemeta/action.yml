@@ -13,7 +13,6 @@ inputs:
       description: User name to which commit should be attributed
       required: false
       default: 'GitHub Actions'
-      default: 'actions@github.com'
     commit-message:
       description: Commit message to associate with commit
       required: false
