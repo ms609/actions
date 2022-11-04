@@ -34,12 +34,12 @@ runs:
 
     - name: ctv2html
       run: |
-        ctv::ctv2html("Phylogenetics.md")
+        ctv::ctv2html("${{ inputs.task-view }}.md")
       shell: Rscript {0}
 
     - name: check_ctv_packages
       run: |
-        result <- ctv::check_ctv_packages("Phylogenetics.md")
+        result <- ctv::check_ctv_packages("${{ inputs.task-view }}.md")
         exceptArchive <- result[-4]
         failures <- lengths(exceptArchive) > 0
         if (any(failures)) {
@@ -51,7 +51,7 @@ runs:
         archived <- result[[4]]
         if (length(archived)) {
           previousArchive <- ctv::check_ctv_packages(
-           "https://raw.githubusercontent.com/cran-task-views/Phylogenetics/main/Phylogenetics.md"
+           "https://raw.githubusercontent.com/cran-task-views/${{ inputs.task-view }}/main/${{ inputs.task-view }}.md"
           )[["Packages in packagelist but archived on CRAN"]]
           newArchives <- setdiff(archived, previousArchive)
           if (length(newArchives)) {
@@ -66,11 +66,11 @@ runs:
     - name: check other links
       if: success() || failure()
       run: |
-        links <- ctv::read.ctv("Phylogenetics.md")$otherlinks
+        links <- ctv::read.ctv("${{ inputs.task-view }}.md")$otherlinks
         urls <- sub(".*href=\"(.*)\".*", "\\1", links)
         ok <- RCurl::url.exists(urls)
         if (any(!ok)) {
-          message("::warning file=Phylogenetics.md::Inoperational links")
+          message("::warning file=${{ inputs.task-view }}.md::Inoperational links")
           stop("URLs did not return OK status:\n - ",
               paste0(names(ok)[!ok], collapse = "\n - ")
           )
