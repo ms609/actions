@@ -6,8 +6,7 @@ This GitHub action updates package metadata using the [codemeta framework](
 
 # Using this workflow
 
-Create a `codemeta.yml` file in `user/PackageName/.github/actions/`,
-containing:
+Create a file `.github/actions/codemeta.yml` with the content:
 
 ```yml
 on:
@@ -30,7 +29,3 @@ jobs:
     steps:
       - uses: ms609/actions/codemeta@main
 ```
-
-Replace `<TaskViewName>` with the name of the task view.
-The task view should be contained in a file named `TaskViewName.md` in the
-`user/TaskViewName` github repository.
