@@ -2,7 +2,7 @@ name: Validate cran task view
 description: Validate cran task view
 inputs:
     task-view:
-      description: Name of task view; should match GitHub repo name
+      description: Name of task view. Should match GitHub repo name, and the name of TaskView.md.
       required: true
   run-only:
     description: Skip the setup step and run the test directly assuming that setup was run.
