@@ -50,6 +50,7 @@ runs:
         brew install libgit2
         git config --local user.email "${{ inputs.user-email }}"
         git config --local user.name "${{ inputs.user-name }}"
+      shell: bash
 
     - name: Install dependencies
       run: |
@@ -60,6 +61,7 @@ runs:
 
     - name: Install package
       run: R CMD INSTALL .
+      shell: bash
 
     - name: Build and deploy documentation
       run: |
