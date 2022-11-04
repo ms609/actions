@@ -55,7 +55,7 @@ runs:
     - name: Install dependencies
       run: |
         remotes::install_deps(
-          dependencies = c("${{ inputs.dependencies }}")
+          dependencies = c(${{ inputs.dependencies }})
         )
       shell: Rscript {0}
 
