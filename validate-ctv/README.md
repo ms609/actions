@@ -6,8 +6,7 @@ be run in any user repository using the `user` option.
 
 # Using this workflow
 
-Create a `validate-ctv.yml` file in `user/TaskViewName/.github/actions/`,
-containing:
+Create a file `user/TaskViewName/.github/actions/validate-ctv.yml`, containing:
 
 ```yml
 on:
