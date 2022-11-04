@@ -41,10 +41,10 @@ runs:
 
     - name: Deploy metadata
       run: |
-        git config --local user.email "${{ input.user-email }}"
-        git config --local user.name "${{ input.user-name }}"
+        git config --local user.email "${{ inputs.user-email }}"
+        git config --local user.name "${{ inputs.user-name }}"
         git add codemeta.json
-        git commit -m "${{ input.commit-message }}"
+        git commit -m "${{ inputs.commit-message }}"
         git fetch
         git pull
         git push
