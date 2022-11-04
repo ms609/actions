@@ -29,3 +29,7 @@ jobs:
     steps:
       - uses: ms609/actions/codemeta@main
 ```
+
+Optionally add the commands `with: user-email`, `user-name`, or `commit-message`
+to override the default commit message, which will read
+"GitHub Actions <actions@github.com>: Update codemeta.json".
