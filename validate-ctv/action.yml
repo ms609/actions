@@ -1,13 +1,17 @@
 name: Validate cran task view
 description: Validate cran task view
 inputs:
+    user:
+      description: Github repository containing task view
+      required: false
+      default: cran-task-views
     task-view:
-      description: Name of task view. Should match GitHub repo name, and the name of TaskView.md.
+      description: Name of task view. Should match GitHub user name, and the name of TaskView.md.
       required: true
-  run-only:
-    description: Skip the setup step and run the test directly assuming that setup was run.
-    required: false
-    default: false
+    run-only:
+      description: Skip the setup step and run the test directly assuming that setup was run.
+      required: false
+      default: false
 runs:
   using: 'composite'
   steps:
@@ -62,7 +66,7 @@ runs:
         archived <- result[[4]]
         if (length(archived)) {
           previousArchive <- ctv::check_ctv_packages(
-           "https://raw.githubusercontent.com/cran-task-views/${{ inputs.task-view }}/main/${{ inputs.task-view }}.md"
+           "https://raw.githubusercontent.com/${{ inputs.user }}/${{ inputs.task-view }}/main/${{ inputs.task-view }}.md"
           )[["Packages in packagelist but archived on CRAN"]]
           newArchives <- setdiff(archived, previousArchive)
           if (length(newArchives)) {

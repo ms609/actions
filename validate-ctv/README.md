@@ -1,0 +1,42 @@
+# Validate CRAN Task View
+
+This GitHub action validates proposed changes to a CRAN task view.
+It is designed for use in the `cran-task-views` GitHub repository, but can
+be run in any user repository using the `user` option.
+
+# Using this workflow
+
+Create a `validate-ctv.yml` file in `user/TaskViewName/.github/actions/`,
+containing:
+
+```yml
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - '.github/workflows/validate-ctv.yml'
+      - '<TaskViewName>.md'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - '.github/workflows/validate-ctv.yml'
+      - '<TaskViewName>.md'
+
+name: Validate task view
+
+jobs:
+  validate-ctv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ms609/actions/validate-ctv@main
+        with:
+          task-view: <TaskViewName>
+```
+
+Replace `<TaskViewName>` with the name of the task view.
+The task view should be contained in a file named `TaskViewName.md` in the
+`user/TaskViewName` github repository.
