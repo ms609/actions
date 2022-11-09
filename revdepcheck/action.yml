@@ -2,7 +2,7 @@ name: Build package documentation
 description: use pkgdown to build and deploy package documentation
 inputs:
     deps:
-      description: Dependecies to check: used as `dependecies` parameter in `revdep_check()`.
+      description: Dependecies to check: used as "dependecies" parameter in "revdep_check()".
       required: false
       default: 'c("Depends", "Imports", "Suggests", "LinkingTo")'
 
