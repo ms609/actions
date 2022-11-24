@@ -20,13 +20,10 @@ runs:
 
 
     - uses: r-lib/actions/setup-r-dependencies@v2
-      with:
-        extra-packages: |
-          any::remotes
     
     - name: Install revdepcheck
       run: |
-        remotes::install_github("r-lib/revdepcheck")
+        pak::pkg_install("r-lib/revdepcheck")
       shell: Rscript {0}
 
     - name: Check reverse dependencies -  ${{ inputs.deps }}
