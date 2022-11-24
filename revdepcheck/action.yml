@@ -18,17 +18,16 @@ runs:
 
     - uses: r-lib/actions/setup-pandoc@v2
 
-    - name: Install revdepcheck
-      run: |
-        install.packages("remotes")
-        remotes::install_github("r-lib/revdepcheck")
-      shell: Rscript {0}
 
     - uses: r-lib/actions/setup-r-dependencies@v2
       with:
         extra-packages: |
           any::remotes
-        needs: revdeps
+    
+    - name: Install revdepcheck
+      run: |
+        remotes::install_github("r-lib/revdepcheck")
+      shell: Rscript {0}
 
     - name: Check reverse dependencies -  ${{ inputs.deps }}
       env:
