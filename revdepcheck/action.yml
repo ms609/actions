@@ -38,14 +38,14 @@ runs:
       shell: Rscript {0}
 
     - name: Upload check results
-      if: failure() && inputs.deps == inputs.deps.default
+      if: failure() && ${{ inputs.deps }} == ${{ inputs.deps.default }}
       uses: actions/upload-artifact@main
       with:
         name: revdep-results
         path: revdep/*.md
 
     - name: Upload check results - ${{ inputs.deps }}
-      if: failure() && ${{ inputs.deps }} == ${{ inputs.deps.default }}
+      if: failure() && ${{ inputs.deps }} != ${{ inputs.deps.default }}
       uses: actions/upload-artifact@main
       with:
         name: revdep-${{ inputs.deps }}-results
