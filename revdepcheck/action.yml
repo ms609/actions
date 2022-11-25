@@ -2,7 +2,7 @@ name: Build package documentation
 description: use pkgdown to build and deploy package documentation
 inputs:
     deps:
-      description: Dependecies to check, used as "dependecies" parameter in "revdep_check()".
+      description: Dependencies to check, used as "dependencies" parameter in "revdep_check()".
       required: false
       default: 'c("Depends", "Imports", "Suggests", "LinkingTo")'
 
@@ -26,7 +26,7 @@ runs:
         pak::pkg_install("r-lib/revdepcheck")
       shell: Rscript {0}
 
-    - name: Check reverse dependencies -  ${{ inputs.deps }}
+    - name: Check reverse dependencies - ${{ inputs.deps }}
       env:
         _R_CHECK_CRAN_INCOMING_REMOTE_: false
       run: |
