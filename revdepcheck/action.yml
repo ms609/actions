@@ -38,6 +38,7 @@ runs:
       shell: Rscript {0}
 
     - name: Upload check results
+      if: failure()
       uses: actions/upload-artifact@main
       with:
         name: revdep-results
