@@ -46,6 +46,7 @@ runs:
       with:
         extra-packages: |
           any::devtools
+          local::.
 
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
