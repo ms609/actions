@@ -30,6 +30,12 @@ runs:
       run: |
         brew install libgit2
       shell: bash
+      
+    - name: Install libcurl
+      if: runner.os = 'Ubuntu'
+      run: |
+        sudo apt-get install libcurl4-openssl-dev
+      shell: bash
 
     - name: Git credentials
       run: |
