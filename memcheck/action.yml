@@ -17,11 +17,6 @@ runs:
       with:
         r-version: release # CRAN uses devel, but takes ages to load deps.
 
-    - name: Install R.methodsS3 # Crashes R if loaded via pak
-      run: |
-        install.packages("R.methodsS3")
-      shell: Rscript {0}
-
     - name: Set up pandoc # Will doing this early avert a crash later?
       uses: r-lib/actions/setup-pandoc@v2
 
