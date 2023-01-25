@@ -33,9 +33,12 @@ runs:
         install.packages("R.methodsS3")
       shell: Rscript {0}
 
-    - name: Install apt packages # zlib1g-dev associated with crash?
+    - name: Set up pandoc # Will doing this early avert a crash later?
+      uses: r-lib/actions/setup-pandoc@v2      
+
+    - name: Install apt packages
       run: |
-        sudo apt-get install valgrind zlib1g-dev
+        sudo apt-get install valgrind
       shell: bash
 
     - name: Set up R dependencies
