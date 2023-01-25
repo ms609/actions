@@ -28,6 +28,11 @@ runs:
       with:
         r-version: release # CRAN uses devel, but takes ages to load deps.
 
+    - name: Install R.methodsS3
+      run: |
+        install.packages("R.methodsS3")
+      shell: Rscript {0}
+
     - name: Install apt packages
       run: |
         sudo apt-get install valgrind
@@ -44,7 +49,7 @@ runs:
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
       run: |
-        R -d "valgrind --tool=memcheck \
+        Rscript -d "valgrind --tool=memcheck \
         --leak-check=full \
         --errors-for-leak-kinds=definite \
         --error-exitcode=1" \
