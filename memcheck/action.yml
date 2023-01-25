@@ -17,9 +17,6 @@ runs:
       with:
         r-version: release # CRAN uses devel, but takes ages to load deps.
 
-    - name: Set up pandoc # Will doing this early avert a crash later?
-      uses: r-lib/actions/setup-pandoc@v2
-
     - name: Install apt packages
       run: |
         sudo apt-get install valgrind
@@ -35,7 +32,7 @@ runs:
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
       run: |
-        Rscript -d "valgrind --tool=memcheck \
+        R -d "valgrind --tool=memcheck \
         --leak-check=full \
         --errors-for-leak-kinds=definite \
         --error-exitcode=1" \
