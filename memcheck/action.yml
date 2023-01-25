@@ -28,14 +28,14 @@ runs:
       with:
         r-version: release # CRAN uses devel, but takes ages to load deps.
 
-    - name: Install R.methodsS3
+    - name: Install R.methodsS3 # Crashes R if loaded via pak
       run: |
         install.packages("R.methodsS3")
       shell: Rscript {0}
 
-    - name: Install apt packages
+    - name: Install apt packages # zlib1g-dev associated with crash?
       run: |
-        sudo apt-get install valgrind
+        sudo apt-get install valgrind zlib1g-dev
       shell: bash
 
     - name: Set up R dependencies
