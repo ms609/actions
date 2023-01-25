@@ -33,7 +33,12 @@ runs:
       with:
         extra-packages: |
           any::devtools
-          local::.
+          
+    - name: Install package
+      run: |
+        export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
+        Rscript "devtools::install()"
+      shell: bash
 
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
