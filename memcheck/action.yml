@@ -37,7 +37,7 @@ runs:
     - name: Install package
       run: |
         export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
-        Rscript "devtools::install()"
+        R -e "devtools::install()"
       shell: bash
 
     - name: valgrind - memcheck tests
