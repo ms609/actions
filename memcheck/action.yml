@@ -12,7 +12,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
- 
+    - name: Checkout git repo
+      uses: actions/checkout@v3
+      
     - name: Load ASan runtime libraries for valgrind # Must come first
       run: |
         export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
@@ -22,8 +24,6 @@ runs:
         echo "LDFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
       shell: bash
         
-    - name: Checkout git repo
-      uses: actions/checkout@v3
 
     - name: Set up R
       uses: r-lib/actions/setup-r@v2
