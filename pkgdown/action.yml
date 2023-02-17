@@ -2,7 +2,7 @@ name: Build package documentation
 description: use pkgdown to build and deploy package documentation
 inputs:
     extra-repositories:
-      description: Extra repositories from which to download required packages
+      description: Extra repositories from which to download required packages; passed to the setup-r step.
       required: false
       default: ''
     run-only:
