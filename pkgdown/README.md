@@ -24,8 +24,7 @@ on:
       - '*.md'
       - 'inst/CITATION'
       - 'inst/*.bib'
-      - 'man/**.R'
-      - 'man-roxygen/**.R'
+      - 'man/**.Rd'
       - 'vignettes/**.Rmd'
 
 name: pkgdown
