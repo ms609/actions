@@ -26,6 +26,9 @@ on:
       - 'inst/*.bib'
       - 'man/**.Rd'
       - 'vignettes/**.Rmd'
+  release:
+    types: [published]
+  workflow_dispatch:
 
 name: pkgdown
 
