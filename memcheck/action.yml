@@ -1,0 +1,90 @@
+name: Check for memory errors
+description: use valgrind to check for memory usage errors
+inputs:
+    test:
+      description: Which aspect of the package to test. Select "tests", "examples", "vignettes" or "all".
+      required: false
+      default: all
+    extra-repositories:
+      description: Extra repositories, passed to r-lib/actions/setup-r
+      required: false
+
+runs:
+  using: 'composite'
+  steps:
+ 
+    - name: Checkout git repo
+      uses: actions/checkout@v4
+      
+    - name: Load ASan runtime libraries for valgrind # Must come first
+      run: |
+        export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
+        mkdir ~/.R
+        echo "LDFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
+      shell: bash
+
+    - name: Set up R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: release # CRAN uses devel, but takes ages to load deps.
+        extra-repositories: ${{ inputs.extra-repositories }}
+
+    - name: Install apt packages
+      run: |
+        sudo apt-get install valgrind
+      shell: bash
+
+    - name: Set up R dependencies
+      uses: r-lib/actions/setup-r-dependencies@v2
+      with:
+        extra-packages: |
+          any::devtools
+
+    - name: Initialize ASan configuration for valgrind
+      run: |
+        echo "PKG_CFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" > src/Makevars
+        echo "PKG_CXXFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> src/Makevars
+      shell: bash
+      
+    - name: Install package
+      run: |
+        devtools::install()
+      shell: Rscript {0}
+
+    - name: valgrind - memcheck tests
+      if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
+      run: |
+        R -d "valgrind --tool=memcheck \
+        --leak-check=full \
+        --errors-for-leak-kinds=definite \
+        --error-exitcode=1" \
+        --vanilla 
+        -e "devtools::test()"
+      shell: bash
+
+    - name: valgrind - memcheck examples
+      if: ${{ inputs.test }} == "examples" || ${{ inputs.test }} == "all"    
+      run: |
+        R -d "valgrind --tool=memcheck \
+        --leak-check=full \
+        --errors-for-leak-kinds=definite \
+        --error-exitcode=1" \
+        --vanilla 
+        -e "devtools::run_examples()"
+      shell: bash
+
+    - name: Set up pandoc
+      if: ${{ inputs.test }} == "vignettes" || ${{ inputs.test }} == "all"
+      uses: r-lib/actions/setup-pandoc@v2
+      
+    - name: valgrind - memcheck vignettes
+      if: ${{ inputs.test }} == "vignettes" || ${{ inputs.test }} == "all"    
+      run: |
+        sudo apt-get install texlive-latex-base
+        R -d "valgrind --tool=memcheck \
+        --leak-check=full \
+        --errors-for-leak-kinds=definite \
+        --error-exitcode=1" \
+        --vanilla 
+        -e "devtools::build_vignettes(install = FALSE)"
+      shell: bash

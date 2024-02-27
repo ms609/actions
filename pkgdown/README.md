@@ -24,15 +24,17 @@ on:
       - '*.md'
       - 'inst/CITATION'
       - 'inst/*.bib'
-      - 'man/**.R'
-      - 'man-roxygen/**.R'
+      - 'man/**.Rd'
       - 'vignettes/**.Rmd'
+  release:
+    types: [published]
+  workflow_dispatch:
 
 name: pkgdown
 
 jobs:
   pkgdown:
-    runs-on: macOS-latest
+    runs-on: ubuntu-20.04
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
