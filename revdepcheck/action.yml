@@ -5,6 +5,10 @@ inputs:
       description: Dependencies to check, used as "dependencies" parameter in "revdep_check()".
       required: false
       default: 'c("Depends", "Imports", "Suggests", "LinkingTo")'
+    extra-packages:
+      description: Extra packages to install with r-lib/actions/setup-r-dependencies#
+      required: false
+      default: ""
 
 runs:
   using: 'composite'
@@ -19,6 +23,8 @@ runs:
     - uses: r-lib/actions/setup-pandoc@v2
 
     - uses: r-lib/actions/setup-r-dependencies@v2
+      with:
+        extra-packages: ${{ inputs.extra-packages }}
     
     - name: Install revdepcheck
       run: |
