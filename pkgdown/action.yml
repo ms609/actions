@@ -57,7 +57,7 @@ runs:
       run: |
         pkgdown::deploy_to_branch(new_process = FALSE)
         if (length(warnings()) > 0) {
-          warnings()
+          print(warnings())
           stop("Fail on warning")
         }
       shell: Rscript {0}
