@@ -55,6 +55,7 @@ runs:
 
     - name: Full install of package
       run: R CMD INSTALL . --no-multiarch --with-keep.source
+      shell: bash
 
     - name: Build and deploy documentation
       run: |
