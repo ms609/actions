@@ -55,7 +55,7 @@ runs:
 
     - name: Build and deploy documentation
       run: |
-        pkgdown::deploy_to_branch(devel = FALSE, install = TRUE, new_process = FALSE)
+        pkgdown::deploy_to_branch(devel = FALSE, install = TRUE, new_process = TRUE)
         if (length(warnings()) > 0) {
           print(warnings())
           stop("Fail on warning")
