@@ -21,26 +21,9 @@ runs:
         r-version: release # CRAN uses devel, but takes ages to load deps.
         extra-repositories: ${{ inputs.extra-repositories }}
 
-    - name: Load ASan runtime libraries for valgrind # Must come before installing apt packages
-      run: |
-        export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
-        mkdir -p ~/.R
-        echo "CFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
-        echo "CXXFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
-        echo "FCFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
-        echo "F77FLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
-        echo "LDFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
-      shell: bash
-
     - name: Install apt packages
       run: |
         sudo apt-get install valgrind
-      shell: bash
-
-    - name: Initialize ASan configuration for valgrind
-      run: |
-        echo "PKG_CFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" > src/Makevars
-        echo "PKG_CXXFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> src/Makevars
       shell: bash
       
     - name: Install package dependencies
@@ -49,11 +32,11 @@ runs:
         devtools::install_deps(dependencies = TRUE)
       shell: Rscript {0}
       
-    - name: Install package
+    - name: Initialize ASan configuration for valgrind
       run: |
-        install.packages("devtools")
-        devtools::install(keep_source = TRUE)
-      shell: Rscript {0}
+        echo "PKG_CFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" > src/Makevars
+        echo "PKG_CXXFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> src/Makevars
+      shell: bash
 
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
