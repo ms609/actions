@@ -19,7 +19,7 @@ runs:
     - name: Load ASan runtime libraries for valgrind # Must come first
       run: |
         export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
-        mkdir ~/.R
+        mkdir -p ~/.R
         echo "LDFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
       shell: bash
 
