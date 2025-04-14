@@ -26,17 +26,24 @@ runs:
         sudo apt-get install valgrind
       shell: bash
       
+    - name: Configure compiler flags for debugging
+      run: |
+        if [ -d "src" ]; then
+          echo "PKG_CFLAGS = -g -O0" > src/Makevars
+          echo "PKG_CXXFLAGS = -g -O0" >> src/Makevars
+        fi
+      shell: bash
+      
     - name: Install package dependencies
       run: |
         install.packages("devtools")
         devtools::install_deps(dependencies = TRUE)
       shell: Rscript {0}
       
-    - name: Initialize ASan configuration for valgrind
+    - name: Install package dependencies
       run: |
-        echo "PKG_CFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" > src/Makevars
-        echo "PKG_CXXFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer" >> src/Makevars
-      shell: bash
+        devtools::install(keep_source = TRUE)
+      shell: Rscript {0}
 
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
