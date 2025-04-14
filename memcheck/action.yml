@@ -69,7 +69,7 @@ runs:
       shell: bash
 
     - name: valgrind - memcheck examples
-      if: inputs.test == "examples" || inputs.test == "all"    
+      if: ${{ inputs.test }} == "examples" || ${{ inputs.test }} == "all"    
       run: |
         R -d "valgrind --tool=memcheck \
         --leak-check=full \
