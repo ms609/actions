@@ -38,12 +38,6 @@ runs:
         sudo apt-get install valgrind
       shell: bash
 
-    - name: Set up R dependencies
-      uses: r-lib/actions/setup-r-dependencies@v2
-      with:
-        extra-packages: |
-          any::devtools
-
     - name: Initialize ASan configuration for valgrind
       run: |
         echo "PKG_CFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" > src/Makevars
@@ -52,6 +46,7 @@ runs:
       
     - name: Install package
       run: |
+        install.packages("devtools")
         devtools::install(dependencies = TRUE, verbose = TRUE)
       shell: Rscript {0}
 
