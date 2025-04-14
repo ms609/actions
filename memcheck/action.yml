@@ -20,6 +20,10 @@ runs:
       run: |
         export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
         mkdir -p ~/.R
+        echo "CFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
+        echo "CXXFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
+        echo "FCFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
+        echo "F77FLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
         echo "LDFLAGS = -g -fsanitize=address -fno-omit-frame-pointer" >> ~/.R/Makevars
       shell: bash
 
