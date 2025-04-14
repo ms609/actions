@@ -54,6 +54,7 @@ runs:
     - name: valgrind - memcheck examples
       if: ${{ inputs.test }} == "examples" || ${{ inputs.test }} == "all"    
       run: |
+        export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
         R -d "valgrind --tool=memcheck \
         --leak-check=full \
         --track-origins=yes \
@@ -71,6 +72,7 @@ runs:
       if: ${{ inputs.test }} == "vignettes" || ${{ inputs.test }} == "all"    
       run: |
         sudo apt-get install texlive-latex-base
+        export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
         R -d "valgrind --tool=memcheck \
         --leak-check=full \
         --errors-for-leak-kinds=definite \
