@@ -51,11 +51,12 @@ runs:
     - uses: r-lib/actions/setup-r-dependencies@v2
       with:
         cache-version: 4826425 # Distinct number to avoid conflict with other workflows
-        extra-packages: any::pkgdown, local::.
+        extra-packages: any::pkgdown, any::roxygen2, local::.
         needs: website
 
     - name: Build and deploy documentation
       run: |
+        roxygen2::roxygenize() # rebuild documentation once package is installed
         pkgdown::deploy_to_branch(devel = FALSE, install = TRUE, new_process = FALSE)
         if (length(warnings()) > 0) {
           print(warnings())
