@@ -53,7 +53,7 @@ runs:
         --track-origins=yes \
         --errors-for-leak-kinds=definite \
         --error-exitcode=1" \
-        --vanilla 
+        --vanilla \
         -e "devtools::test()"
       shell: bash
 
@@ -65,7 +65,7 @@ runs:
         --track-origins=yes \
         --errors-for-leak-kinds=definite \
         --error-exitcode=1" \
-        --vanilla 
+        --vanilla \
         -e "devtools::run_examples()"
       shell: bash
 
@@ -81,6 +81,6 @@ runs:
         --leak-check=full \
         --errors-for-leak-kinds=definite \
         --error-exitcode=1" \
-        --vanilla 
+        --vanilla \
         -e "devtools::build_vignettes(install = FALSE)"
       shell: bash
