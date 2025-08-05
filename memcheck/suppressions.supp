@@ -1,0 +1,6 @@
+{
+   RCurl-definite-leak
+   Memcheck:Leak
+   fun:calloc
+   obj:/home/runner/work/_temp/Library/RCurl/libs/RCurl.so
+}

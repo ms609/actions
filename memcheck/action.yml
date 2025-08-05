@@ -44,6 +44,9 @@ runs:
       run: |
         devtools::install(keep_source = TRUE)
       shell: Rscript {0}
+    
+    - name: Download Valgrind suppression file
+      run: curl -o suppressions.supp https://raw.githubusercontent.com/ms609/actions/memcheck/main/suppressions.supp
 
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
@@ -52,6 +55,7 @@ runs:
         --leak-check=full \
         --track-origins=yes \
         --errors-for-leak-kinds=definite \
+        --suppressions=valgrind.supp \
         --error-exitcode=1" \
         --vanilla \
         -e "devtools::test()"
