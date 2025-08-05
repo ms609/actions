@@ -57,7 +57,7 @@ runs:
         --leak-check=full \
         --track-origins=yes \
         --errors-for-leak-kinds=definite \
-        --suppressions=valgrind.supp \
+        --suppressions=suppressions.supp \
         --error-exitcode=1" \
         --vanilla \
         -e "devtools::test()"
@@ -70,6 +70,7 @@ runs:
         --leak-check=full \
         --track-origins=yes \
         --errors-for-leak-kinds=definite \
+        --suppressions=suppressions.supp \
         --error-exitcode=1" \
         --vanilla \
         -e "devtools::run_examples()"
@@ -86,6 +87,7 @@ runs:
         R -d "valgrind --tool=memcheck \
         --leak-check=full \
         --errors-for-leak-kinds=definite \
+        --suppressions=suppressions.supp \
         --error-exitcode=1" \
         --vanilla \
         -e "devtools::build_vignettes(install = FALSE)"
