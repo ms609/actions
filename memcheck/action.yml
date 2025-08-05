@@ -47,7 +47,7 @@ runs:
     
     - name: Download Valgrind suppression file
       run: |
-        curl -o suppressions.supp https://raw.githubusercontent.com/ms609/actions/memcheck/main/suppressions.supp
+        curl -o suppressions.supp https://raw.githubusercontent.com/ms609/actions/refs/heads/main/memcheck/suppressions.supp
       shell: bash
 
     - name: valgrind - memcheck tests
