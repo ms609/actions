@@ -90,5 +90,5 @@ runs:
         --suppressions=suppressions.supp \
         --error-exitcode=1" \
         --vanilla \
-        -e "devtools::build_vignettes(install = FALSE)"
+        -e "tools::buildVignettes(dir = ".")"
       shell: bash
