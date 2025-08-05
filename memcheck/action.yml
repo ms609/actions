@@ -25,6 +25,11 @@ runs:
       run: |
         sudo apt-get install valgrind
       shell: bash
+    
+    - name: Download Valgrind suppression file
+      run: |
+        curl -o suppressions.supp https://raw.githubusercontent.com/ms609/actions/refs/heads/main/memcheck/suppressions.supp
+      shell: bash
       
     - name: Configure compiler flags for debugging
       run: |
@@ -40,15 +45,10 @@ runs:
         devtools::install_deps(dependencies = TRUE)
       shell: Rscript {0}
       
-    - name: Install package dependencies
+    - name: Install package
       run: |
         devtools::install(keep_source = TRUE)
       shell: Rscript {0}
-    
-    - name: Download Valgrind suppression file
-      run: |
-        curl -o suppressions.supp https://raw.githubusercontent.com/ms609/actions/refs/heads/main/memcheck/suppressions.supp
-      shell: bash
 
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
