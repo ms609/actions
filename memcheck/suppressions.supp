@@ -4,3 +4,10 @@
    fun:calloc
    obj:/home/runner/work/_temp/Library/RCurl/libs/RCurl.so
 }
+{
+   Rconnection_leak
+   Memcheck:Leak
+   fun:calloc
+   fun:R_newConnection
+   obj:/usr/lib/R/lib/libR.so*
+}
