@@ -46,7 +46,9 @@ runs:
       shell: Rscript {0}
     
     - name: Download Valgrind suppression file
-      run: curl -o suppressions.supp https://raw.githubusercontent.com/ms609/actions/memcheck/main/suppressions.supp
+      run: |
+        curl -o suppressions.supp https://raw.githubusercontent.com/ms609/actions/memcheck/main/suppressions.supp
+      shell: bash
 
     - name: valgrind - memcheck tests
       if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
