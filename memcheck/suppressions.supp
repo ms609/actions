@@ -18,3 +18,10 @@
    fun:R_newConnection
    obj:/usr/lib/R/lib/libR.so*
 }
+{
+   cli_thread_tls
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:pthread_create@@GLIBC*
+}

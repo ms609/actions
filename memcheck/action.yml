@@ -58,6 +58,7 @@ runs:
         --track-origins=yes \
         --errors-for-leak-kinds=definite \
         --suppressions=suppressions.supp \
+        --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
         -e "devtools::test()"
@@ -71,6 +72,7 @@ runs:
         --track-origins=yes \
         --errors-for-leak-kinds=definite \
         --suppressions=suppressions.supp \
+        --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
         -e "devtools::run_examples()"
@@ -88,6 +90,7 @@ runs:
         --leak-check=full \
         --errors-for-leak-kinds=definite \
         --suppressions=suppressions.supp \
+        --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
         -e "tools::buildVignettes(dir = ".")"
