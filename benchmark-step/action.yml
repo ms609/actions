@@ -1,0 +1,35 @@
+name: Benchmark R Package
+description: Installs and benchmarks an R package in a given subdirectory
+
+inputs:
+  directory:
+    description: Subdirectory containing the package to benchmark
+    required: true
+  output:
+    description: Output folder to store benchmark .Rds files
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - working-directory: "${{ inputs.directory }}"
+      run: |
+        echo "::group::Installing from ${{ inputs.directory }}"
+        R CMD INSTALL . --library=$(mktemp -d) \
+          --preclean --clean --byte-compile \
+          --no-docs --no-help --no-test-load --no-multiarch
+        echo "::endgroup::"
+
+        echo "::group::Cleaning temp files"
+        pkill -f 'R --' || true
+        rm -rf /tmp/R* || true
+        rm -rf /tmp/R_sess* || true
+        echo "::endgroup::"
+
+        echo "::group::Running benchmark for ${{ inputs.directory }}"
+        cd ../pr
+        Rscript benchmark/_run_benchmarks.R
+        mkdir -p "../${{ inputs.output }}-benchmark-results"
+        mv *.bench.Rds "../${{ inputs.output }}-benchmark-results"
+        echo "::endgroup::"
+      shell: bash
