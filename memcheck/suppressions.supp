@@ -11,3 +11,14 @@
    fun:R_newConnection
    obj:/usr/lib/R/lib/libR.so*
 }
+{
+   <r_connection_readLines_leak>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:do_readLines
+   fun:bcEval_loop
+   fun:bcEval
+   fun:Rf_eval
+   fun:R_execClosure
+}
