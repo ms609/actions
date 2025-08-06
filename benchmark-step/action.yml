@@ -13,6 +13,7 @@ runs:
   using: "composite"
   steps:
     - working-directory: "${{ inputs.path }}"
+      name: Install and benchmark package from path
       run: |
         echo "::group::Installing from ${{ inputs.path }}"
         R CMD INSTALL . --library=$(mktemp -d) \
