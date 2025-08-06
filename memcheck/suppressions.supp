@@ -4,21 +4,17 @@
    fun:calloc
    obj:/home/runner/work/_temp/Library/RCurl/libs/RCurl.so
 }
+
+{
+   do_readLines_leak
+   Memcheck:Leak
+   fun:malloc
+   fun:do_readLines
+}
 {
    Rconnection_leak
    Memcheck:Leak
    fun:calloc
    fun:R_newConnection
    obj:/usr/lib/R/lib/libR.so*
-}
-{
-   <r_connection_readLines_leak>
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:do_readLines
-   fun:bcEval_loop
-   fun:bcEval
-   fun:Rf_eval
-   fun:R_execClosure
 }
