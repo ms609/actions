@@ -30,7 +30,9 @@ runs:
         echo "::group::Running benchmark for ${{ inputs.path }}"
         cd ../pr
         Rscript benchmark/_run_benchmarks.R
-        mkdir -p "../${{ inputs.output }}-benchmark-results"
-        mv *.bench.Rds "../${{ inputs.output }}-benchmark-results"
+        echo "Writing output to ${{ inputs.output }}-benchmark-results"
+        mkdir -p "./${{ inputs.output }}-benchmark-results"
+        mv *.bench.Rds "./${{ inputs.output }}-benchmark-results"
+        dir "${{ inputs.output }}-benchmark-results"
         echo "::endgroup::"
       shell: bash
