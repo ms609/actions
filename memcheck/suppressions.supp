@@ -25,3 +25,90 @@
    ...
    fun:pthread_create@@GLIBC*
 }
+{
+   pango_cairo_create_layout 
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:g_malloc0
+   fun:pango_language_from_string
+   fun:pango_language_get_default
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   fun:g_type_create_instance
+   obj:/usr/lib/x86_64-linux-gnu/libgobject-2.0.so*
+   fun:g_object_new_with_properties
+   fun:g_object_new
+   fun:pango_font_map_create_context
+   fun:pango_cairo_create_context
+   fun:pango_cairo_create_layout
+}
+{
+   FcFontSetMatch_clone
+   Memcheck:Leak
+   fun:calloc
+   fun:FcPatternCreate
+   fun:FcFontRenderPrepare
+   fun:FcFontSetMatch
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so*
+}
+{
+   <PangoLeaks>
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_atomic_rc_box_alloc0
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libcairo.so*
+}
+{
+   <FcFontSetSortLeak>
+   Memcheck:Leak
+   fun:malloc
+   fun:FcFontSetSort
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so*
+}
+
+{
+   <PangoAgain>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   fun:FcDefaultSubstitute
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+}
+{
+   <PangoFontRenderPrep>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   fun:FcFontRenderPrepare
+   fun:FcFontSetMatch
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so*
+}
+{
+   <Pango_FcDefaultSubstitute>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   fun:FcDefaultSubstitute
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+}
