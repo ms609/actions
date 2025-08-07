@@ -51,7 +51,7 @@ runs:
       shell: Rscript {0}
 
     - name: valgrind - memcheck tests
-      if: ${{ inputs.test }} == "tests" || ${{ inputs.test }} == "all"    
+      if: ${{ inputs.test == "tests" || inputs.test == "all" }}
       run: |
         R -d "valgrind --tool=memcheck \
         --leak-check=full \
@@ -65,7 +65,7 @@ runs:
       shell: bash
 
     - name: valgrind - memcheck examples
-      if: ${{ inputs.test }} == "examples" || ${{ inputs.test }} == "all"    
+      if: ${{ inputs.test == "examples" || inputs.test == "all" }}
       run: |
         R -d "valgrind --tool=memcheck \
         --leak-check=full \
@@ -79,11 +79,11 @@ runs:
       shell: bash
 
     - name: Set up pandoc
-      if: ${{ inputs.test }} == "vignettes" || ${{ inputs.test }} == "all"
+      if: ${{ inputs.test == "vignettes" || inputs.test == "all" }} 
       uses: r-lib/actions/setup-pandoc@v2
       
     - name: valgrind - memcheck vignettes
-      if: ${{ inputs.test }} == "vignettes" || ${{ inputs.test }} == "all"    
+      if: ${{ inputs.test == "vignettes" || inputs.test == "all" }}
       run: |
         sudo apt-get install texlive-latex-base
         R -d "valgrind --tool=memcheck \
