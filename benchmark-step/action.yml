@@ -12,11 +12,21 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - working-directory: "${{ inputs.path }}"
-      name: Install and benchmark package from path
+    - name: Install and benchmark package from path
       run: |
+        echo "::group::Checking for previous installation"
+        PACKAGE_NAME=$(Rscript -e "cat(basename(normalizePath('.')))")                
+        if Rscript -e "if ('$PACKAGE_NAME' %in% rownames(installed.packages())) quit(status = 1)" ; then
+          echo "❌ Package '$PACKAGE_NAME' is already installed in default libPaths()"
+          echo "Please ensure the environment is clean before benchmarking."
+          echo "Installed packages:"
+          Rscript -e "print(installed.packages()[, 1])"
+          exit 1
+        fi
+        echo "::endgroup::"
+      
         echo "::group::Installing from ${{ inputs.path }}"
-        
+        cd "${{ inputs.path }}"
         # Create and export a temp library directory
         LIB_DIR=$(mktemp -d)
         export R_LIBS="$LIB_DIR"
