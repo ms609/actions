@@ -93,5 +93,5 @@ runs:
         --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
-        -e "tools::buildVignettes(dir = ".")"
+        -e "tools::buildVignettes(dir = '.')"
       shell: bash
