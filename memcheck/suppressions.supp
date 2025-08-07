@@ -112,3 +112,58 @@
    obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
    obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
 }
+
+{
+   <Pango_layout>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:g_malloc0
+   fun:g_atomic_rc_box_alloc0
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+}
+
+{
+   <pango-calloc>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:g_malloc0
+   fun:g_atomic_rc_box_alloc0
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:FcFontSetAdd
+   fun:FcFontSetSort
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
+   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0.8000.0
+
+}
+{
+   <libfontconfig>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
+}
