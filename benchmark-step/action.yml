@@ -16,23 +16,32 @@ runs:
       name: Install and benchmark package from path
       run: |
         echo "::group::Installing from ${{ inputs.path }}"
-        R CMD INSTALL . --library=$(mktemp -d) \
+        
+        # Create and export a temp library directory
+        LIB_DIR=$(mktemp -d)
+        export R_LIBS="$LIB_DIR"
+        
+        R CMD INSTALL . --library="$LIB_DIR" \
           --preclean --clean --byte-compile \
           --no-docs --no-help --no-test-load --no-multiarch
         echo "::endgroup::"
 
         echo "::group::Cleaning temp files"
         pkill -f 'R --' || true
-        rm -rf /tmp/R* || true
-        rm -rf /tmp/R_sess* || true
+        rm -rf /tmp/R* /tmp/R_sess* || true
         echo "::endgroup::"
 
         echo "::group::Running benchmark for ${{ inputs.path }}"
         cd ../pr
-        Rscript benchmark/_run_benchmarks.R
+        R_LIBS="$LIB_DIR" Rscript benchmark/_run_benchmarks.R
+        
         echo "Writing output to ${{ inputs.output }}-benchmark-results"
         mkdir -p "./${{ inputs.output }}-benchmark-results"
         mv *.bench.Rds "./${{ inputs.output }}-benchmark-results"
-        dir "${{ inputs.output }}-benchmark-results"
+        ls -lh "${{ inputs.output }}-benchmark-results"
+        echo "::endgroup::"
+        
+        echo "::group::Cleaning temporary library"
+        rm -rf "$LIB_DIR"
         echo "::endgroup::"
       shell: bash
