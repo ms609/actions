@@ -8,11 +8,15 @@ inputs:
   output:
     description: Output folder to store benchmark .Rds files
     required: true
+  reinstall-packages:
+    description: Comma-separated list of packages to reinstall after initial installation
+    required: false
+    default: ''
 
 runs:
   using: "composite"
   steps:
-    - name: Install and benchmark package from path
+    - name: Install package from path
       run: |
         echo "::group::Checking for previous installation"
         PACKAGE_NAME=$(Rscript -e "cat(basename(normalizePath('.')))")                
@@ -35,12 +39,36 @@ runs:
           --preclean --clean --byte-compile \
           --no-docs --no-help --no-test-load --no-multiarch
         echo "::endgroup::"
+      shell: bash
+      
+    - name: Reinstall specified packages
+      if: ${{ inputs.reinstall-packages != '' }}
+      run: |
+        echo "::group::Reinstalling packages: ${{ inputs.reinstall-packages }}"
+        R_LIBS="${{ steps.install-and-benchmark-package-from-path.outputs.lib_dir }}" Rscript -e '
+          packages_to_reinstall <- strsplit("${{ inputs.reinstall-packages }}", ",")[[1]]
+          packages_to_reinstall <- trimws(packages_to_reinstall)
+          
+          # Reinstall each package, forcing the installation
+          for (pkg in packages_to_reinstall) {
+            message("Reinstalling ", pkg)
+            install.packages(pkg, repos = "https://cloud.r-project.org/", force = TRUE)
+          }
+        '
+        echo "::endgroup::"
+      shell: bash
 
+    - name: Cleaning temp files
+      if: always()
+      run: |
         echo "::group::Cleaning temp files"
         pkill -f 'R --' || true
         rm -rf /tmp/R* /tmp/R_sess* || true
         echo "::endgroup::"
+      shell: bash
 
+    - name: Running benchmark
+      run: |
         echo "::group::Running benchmark for ${{ inputs.path }}"
         cd ../pr
         R_LIBS="$LIB_DIR" Rscript benchmark/_run_benchmarks.R
@@ -50,7 +78,11 @@ runs:
         mv *.bench.Rds "./${{ inputs.output }}-benchmark-results"
         ls -lh "${{ inputs.output }}-benchmark-results"
         echo "::endgroup::"
-        
+      shell: bash
+      
+    - name: Cleaning temporary library
+      if: always()
+      run: |
         echo "::group::Cleaning temporary library"
         rm -rf "$LIB_DIR"
         echo "::endgroup::"
