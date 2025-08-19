@@ -71,7 +71,7 @@ runs:
     - name: Running benchmark
       run: |
         echo "::group::Running benchmark for ${{ inputs.path }}"
-        cd ../pr
+        cd pr
         R_LIBS="$LIB_DIR" Rscript benchmark/_run_benchmarks.R
         
         echo "Writing output to ${{ inputs.output }}-benchmark-results"
