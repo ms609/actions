@@ -16,7 +16,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install package from path
+    - name: Install package from provided path
       run: |
         echo "::group::Checking for previous installation"
         PACKAGE_NAME=$(Rscript -e "cat(basename(normalizePath('.')))")                
@@ -27,6 +27,7 @@ runs:
           Rscript -e "print(installed.packages()[, 1])"
           exit 1
         fi
+        echo "\u2705 No previous installation found."
         echo "::endgroup::"
       
         echo "::group::Installing from ${{ inputs.path }}"
@@ -38,6 +39,15 @@ runs:
         R CMD INSTALL . --library="$LIB_DIR" \
           --preclean --clean --byte-compile \
           --no-docs --no-help --no-test-load --no-multiarch
+        echo "::endgroup::"
+      shell: bash
+      
+    - name: Cleaning temp files
+      if: always()
+      run: |
+        echo "::group::Cleaning temp files"
+        pkill -f 'R --' || true
+        rm -rf /tmp/R* /tmp/R_sess* || true
         echo "::endgroup::"
       shell: bash
       
@@ -55,15 +65,6 @@ runs:
             install.packages(pkg, repos = "https://cloud.r-project.org/", force = TRUE)
           }
         '
-        echo "::endgroup::"
-      shell: bash
-
-    - name: Cleaning temp files
-      if: always()
-      run: |
-        echo "::group::Cleaning temp files"
-        pkill -f 'R --' || true
-        rm -rf /tmp/R* /tmp/R_sess* || true
         echo "::endgroup::"
       shell: bash
 
