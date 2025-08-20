@@ -17,6 +17,7 @@ runs:
   using: "composite"
   steps:
     - name: Install package from provided path
+      id: install
       run: |
         echo "::group::Checking for previous installation"
         PACKAGE_NAME=$(Rscript -e "cat(basename(normalizePath('.')))")                
@@ -27,13 +28,14 @@ runs:
           Rscript -e "print(installed.packages()[, 1])"
           exit 1
         fi
-        echo "\u2705 No previous installation found."
+        echo "✅ No previous installation found."
         echo "::endgroup::"
       
         echo "::group::Installing from ${{ inputs.path }}"
         cd "${{ inputs.path }}"
         # Create and export a temp library directory
         LIB_DIR=$(mktemp -d)
+        echo "lib_dir=$LIB_DIR" >> $GITHUB_OUTPUT
         export R_LIBS="$LIB_DIR"
         
         R CMD INSTALL . --library="$LIB_DIR" \
@@ -55,7 +57,7 @@ runs:
       if: ${{ inputs.reinstall-packages != '' }}
       run: |
         echo "::group::Reinstalling packages: ${{ inputs.reinstall-packages }}"
-        R_LIBS="${{ steps.install-and-benchmark-package-from-path.outputs.lib_dir }}" Rscript -e '
+        R_LIBS="${{ steps.install.outputs.lib_dir }}" Rscript -e '
           packages_to_reinstall <- strsplit("${{ inputs.reinstall-packages }}", ",")[[1]]
           packages_to_reinstall <- trimws(packages_to_reinstall)
           
@@ -72,7 +74,7 @@ runs:
       run: |
         echo "::group::Running benchmark for ${{ inputs.path }}"
         cd pr
-        R_LIBS="$LIB_DIR" Rscript benchmark/_run_benchmarks.R
+        R_LIBS="${{ steps.install.outputs.lib_dir }}" Rscript benchmark/_run_benchmarks.R
         
         echo "Writing output to ${{ inputs.output }}-benchmark-results"
         mkdir -p "./${{ inputs.output }}-benchmark-results"
@@ -85,6 +87,6 @@ runs:
       if: always()
       run: |
         echo "::group::Cleaning temporary library"
-        rm -rf "$LIB_DIR"
+        rm -rf "${{ steps.install.outputs.lib_dir }}"
         echo "::endgroup::"
       shell: bash
