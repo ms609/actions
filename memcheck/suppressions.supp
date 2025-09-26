@@ -194,3 +194,31 @@
    obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
    obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
 }
+{
+   <suppress_fontconfig_leak>
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:malloc
+   fun:strdup
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   fun:FcConfigSubstituteWithPat
+   obj:*/libpangocairo-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+}
+
+{
+   <suppress_fontconfig_leak>
+   Memcheck:Leak
+   match-leak-kinds: all
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   ...
+}
