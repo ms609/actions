@@ -43,6 +43,27 @@
    fun:pango_cairo_create_layout
 }
 {
+   pango_general_leaks
+   Memcheck:Leak
+   ...
+   obj:*/libpango-1.0.so.*
+   obj:*/libpangoft2-1.0.so.*
+   obj:*/libpangocairo-1.0.so.*
+   obj:*/libpangoapp-1.0.so.*
+}
+{
+   r_internal_compression_leak
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:malloc
+   ...
+   fun:libdeflate_alloc_compressor_ex
+   fun:R_lazyLoadDBinsertValue
+   fun:Rf_eval
+   ...
+}
+{
    FcFontSetMatch_clone
    Memcheck:Leak
    fun:calloc
