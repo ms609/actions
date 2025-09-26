@@ -222,3 +222,40 @@
    obj:*/libfontconfig.so*
    ...
 }
+{
+   LibDeflate
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:libdeflate_alloc_compressor_ex
+   fun:R_compress1
+   fun:R_lazyLoadDBinsertValue
+   fun:do_lazyLoadDBinsertValue
+   fun:bcEval_loop
+   fun:bcEval
+   fun:bcEval
+   fun:Rf_eval
+   fun:R_execClosure
+   fun:applyClosure_core
+   fun:Rf_applyClosure
+   fun:Rf_eval
+   fun:Rf_ReplIteration
+   fun:R_ReplConsole
+}
+{
+   PangoLayout
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1
+   fun:FcDefaultSubstitute
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   fun:pango_layout_get_size
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+}
