@@ -247,8 +247,8 @@
    Memcheck:Leak
    match-leak-kinds: definite
    fun:realloc
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
    fun:FcDefaultSubstitute
    obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
    obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
@@ -258,4 +258,21 @@
    obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
    fun:pango_layout_get_size
    obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+}
+{
+   PangoLine
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:g_malloc0
+   fun:g_atomic_rc_box_alloc0
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   fun:pango_layout_get_size
+   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   fun:pango_layout_get_line
 }
