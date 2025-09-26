@@ -33,9 +33,9 @@
    fun:g_malloc0
    fun:pango_language_from_string
    fun:pango_language_get_default
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
    fun:g_type_create_instance
-   obj:/usr/lib/x86_64-linux-gnu/libgobject-2.0.so*
+   obj:*/libgobject-2.0.so*
    fun:g_object_new_with_properties
    fun:g_object_new
    fun:pango_font_map_create_context
@@ -70,8 +70,8 @@
    fun:FcPatternCreate
    fun:FcFontRenderPrepare
    fun:FcFontSetMatch
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libglib-2.0.so*
 }
 {
    <PangoLeaks>
@@ -79,17 +79,17 @@
    fun:calloc
    fun:g_malloc0
    fun:g_atomic_rc_box_alloc0
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libcairo.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libcairo.so*
 }
 {
    <FcFontSetSortLeak>
    Memcheck:Leak
    fun:malloc
    fun:FcFontSetSort
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libglib-2.0.so*
 }
 
 {
@@ -97,41 +97,41 @@
    Memcheck:Leak
    match-leak-kinds: definite
    fun:realloc
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
    fun:FcDefaultSubstitute
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
 }
 {
    <PangoFontRenderPrep>
    Memcheck:Leak
    match-leak-kinds: definite
    fun:realloc
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
    fun:FcFontRenderPrepare
    fun:FcFontSetMatch
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libglib-2.0.so*
 }
 {
    <Pango_FcDefaultSubstitute>
    Memcheck:Leak
    match-leak-kinds: definite
    fun:realloc
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
    fun:FcDefaultSubstitute
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpangocairo-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
 }
 
 {
@@ -141,9 +141,9 @@
    fun:calloc
    fun:g_malloc0
    fun:g_atomic_rc_box_alloc0
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
 }
 
 {
@@ -153,15 +153,15 @@
    fun:calloc
    fun:g_malloc0
    fun:g_atomic_rc_box_alloc0
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpangocairo-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
 }
 {
    <insert_a_suppression_name_here>
@@ -170,29 +170,29 @@
    fun:malloc
    fun:FcFontSetAdd
    fun:FcFontSetSort
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-   obj:/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0.8000.0
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libglib-2.0.so.0.8000.0
 
 }
 {
    OpenSSL_leaks
    Memcheck:Leak
    match-leak-kinds: definite,indirect
-   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+   obj:*/libcrypto.so.3
 }
 {
    <libfontconfig>
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
-   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
-   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
-   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
-   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
-   obj:/usr/lib/x86_64-linux-gnu/libexpat.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libexpat.so*
+   obj:*/libexpat.so*
+   obj:*/libexpat.so*
+   obj:*/libexpat.so*
+   obj:*/libexpat.so*
 }
 {
    <suppress_fontconfig_leak>
@@ -247,17 +247,35 @@
    Memcheck:Leak
    match-leak-kinds: definite
    fun:realloc
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
-   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
    fun:FcDefaultSubstitute
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
    fun:pango_layout_get_size
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:*/libpango-1.0.so*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:strdup
+   obj:*/libfontconfig.so*
+   ...
+   fun:FcConfigSubstituteWithPat
+   obj:*/libpangocairo-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   fun:pango_layout_get_line
+   fun:PG_text_extents
+   fun:PangoCairo_StrWidth
+   fun:GEStrWidth
 }
 {
    PangoLine
@@ -266,13 +284,13 @@
    fun:calloc
    fun:g_malloc0
    fun:g_atomic_rc_box_alloc0
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpangoft2-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
+   obj:*/libpango-1.0.so*
    fun:pango_layout_get_size
-   obj:/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5200.1
+   obj:*/libpango-1.0.so*
    fun:pango_layout_get_line
 }
