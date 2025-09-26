@@ -154,6 +154,12 @@
 
 }
 {
+   OpenSSL_leaks
+   Memcheck:Leak
+   match-leak-kinds: definite,indirect
+   obj:/usr/lib/x86_64-linux-gnu/libcrypto.so.3
+}
+{
    <libfontconfig>
    Memcheck:Leak
    match-leak-kinds: definite
