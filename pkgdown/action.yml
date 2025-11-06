@@ -5,6 +5,10 @@ inputs:
       description: Extra repositories from which to download required packages; passed to the setup-r step.
       required: false
       default: ''
+    submodules:
+      description: Also download package submodules
+      required: false
+      default: 'false'
     run-only:
       description: Skip the setup steps and run directly, assuming that setup was run
       required: false
@@ -21,7 +25,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v5    
+      with:
+        submodules: ${{ inputs.submodules }}
 
     - uses: r-lib/actions/setup-pandoc@v2
 
