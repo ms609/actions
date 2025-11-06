@@ -21,7 +21,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - uses: r-lib/actions/setup-pandoc@v2
 
@@ -51,7 +51,7 @@ runs:
     - uses: r-lib/actions/setup-r-dependencies@v2
       with:
         cache-version: 4826426 # Distinct number to avoid conflict with other workflows
-        extra-packages: local::., r-lib/pkgdown # Replace with any::pkgdown@2.1.2
+        extra-packages: local::.
         needs: website
 
     - name: Build and deploy documentation
