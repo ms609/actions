@@ -57,7 +57,7 @@ runs:
     - uses: r-lib/actions/setup-r-dependencies@v2
       with:
         cache-version: 4826426 # Distinct number to avoid conflict with other workflows
-        extra-packages: local::.
+        extra-packages: local::., any::pkgdown
         needs: website
 
     - name: Build and deploy documentation
