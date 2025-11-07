@@ -47,7 +47,7 @@ Optionally add the commands `with: user-email`, `user-name` to attribute the
 resulting commit to a GitHub user.
 
 ```yml
-    with:
-      user-email: actions@github.com
-      user-name: GitHub Actions
+        with:
+          user-email: actions@github.com
+          user-name: GitHub Actions
 ```
