@@ -88,7 +88,7 @@ runs:
             final_app_dir <- installed_path
           } else {
             dir(".")
-            stop(paste("Could not find app.R in", source_path, "or", installed_path))
+            stop(paste("Could not find app.R in", source_path, "or", installed_path, ". Do you need to fetch submodules?"))
           }
           
           if (!requireNamespace("shinylive", quietly = TRUE)) {
