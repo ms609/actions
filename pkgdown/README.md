@@ -51,3 +51,11 @@ resulting commit to a GitHub user.
           user-email: actions@github.com
           user-name: GitHub Actions
 ```
+
+To add additional elements to the site before deploying, run this script with
+```yml
+        with:
+          deploy: false
+```
+
+then manually deploy the site as an additional step.

@@ -21,6 +21,10 @@ inputs:
       description: User name to which commit should be attributed
       required: false
       default: 'GitHub Actions'
+    deploy:
+      description: Should the site be deployed once built?
+      required: false
+      default: true
 
 runs:
   using: 'composite'
@@ -61,6 +65,7 @@ runs:
         needs: website
 
     - name: Build and deploy documentation
+      if: ${{ inputs.deploy }}
       run: |
         pkgdown::deploy_to_branch(devel = FALSE, install = FALSE, new_process = FALSE)
         if (length(warnings()) > 0) {
