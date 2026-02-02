@@ -73,6 +73,7 @@ runs:
     - run: dir inst
 
     - name: Build and optionally deploy
+      shell: Rscript {0}
       run: |
         is_shinylive <- "${{ inputs.shinylive-app }}" != ""
         should_deploy <- "${{ inputs.deploy }}" == "true"
@@ -115,4 +116,3 @@ runs:
           print(warnings())
           stop("Fail on warning")
         }
-      shell: Rscript {0}
