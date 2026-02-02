@@ -1,30 +1,34 @@
 name: Build package documentation
 description: use pkgdown to build and deploy package documentation
 inputs:
-    extra-repositories:
-      description: Extra repositories from which to download required packages; passed to the setup-r step.
-      required: false
-      default: ''
-    submodules:
-      description: Also download package submodules
-      required: false
-      default: 'false'
-    run-only:
-      description: Skip the setup steps and run directly, assuming that setup was run
-      required: false
-      default: false
-    user-email:
-      description: E-mail address to which commit should be attributed
-      required: false
-      default: 'actions@github.com'
-    user-name:
-      description: User name to which commit should be attributed
-      required: false
-      default: 'GitHub Actions'
-    deploy:
-      description: Should the site be deployed once built?
-      required: false
-      default: true
+  extra-repositories:
+    description: Extra repositories from which to download required packages; passed to the setup-r step.
+    required: false
+    default: ''
+  submodules:
+    description: Also download package submodules
+    required: false
+    default: 'false'
+  run-only:
+    description: Skip the setup steps and run directly, assuming that setup was run
+    required: false
+    default: false
+  user-email:
+    description: E-mail address to which commit should be attributed
+    required: false
+    default: 'actions@github.com'
+  user-name:
+    description: User name to which commit should be attributed
+    required: false
+    default: 'GitHub Actions'
+  deploy:
+    description: Should the site be deployed once built? (ignored if shinylive-app is set)
+    required: false
+    default: 'true'
+  shinylive-app:
+    description: Path to a Shiny app to be converted via Shinylive (e.g., 'inst/MyApp')
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -64,10 +68,31 @@ runs:
         extra-packages: local::., any::pkgdown
         needs: website
 
-    - name: Build and deploy documentation
-      if: ${{ inputs.deploy }}
+    - name: Build and optionally deploy
       run: |
-        pkgdown::deploy_to_branch(devel = FALSE, install = FALSE, new_process = FALSE)
+        is_shinylive <- "${{ inputs.shinylive-app }}" != ""
+        should_deploy <- "${{ inputs.deploy }}" == "true"
+        
+        if (is_shinylive) {
+          pkgdown::build_site(install = FALSE, new_process = FALSE)
+          
+          if (!requireNamespace("shinylive", quiet = TRUE)) {
+            install.packages("shinylive")
+          }
+          shinylive::export(
+            appdir = "${{ inputs.shinylive-app }}",
+            destdir = "docs/articles/app"
+          )
+          
+          if (should_deploy) {
+            pkgdown::deploy_to_branch(devel = FALSE, install = FALSE, new_process = FALSE)
+          }
+        } else if (should_deploy) {
+          pkgdown::deploy_to_branch(devel = FALSE, install = FALSE, new_process = FALSE)
+        } else {
+          pkgdown::build_site(install = FALSE, new_process = FALSE)
+        }
+        
         if (length(warnings()) > 0) {
           print(warnings())
           stop("Fail on warning")
