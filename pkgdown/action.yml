@@ -96,7 +96,7 @@ runs:
           }
           
           shinylive::export(
-            appdir = final_app_dir
+            appdir = final_app_dir,
             destdir = "docs/articles/app"
           )
           
