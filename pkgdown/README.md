@@ -68,13 +68,13 @@ To install a [ShinyLive](https://posit-dev.github.io/r-shinylive/) app to `app`,
 
 You may also need to add 
 ```yml
-exclude:
-  - app
-
 navbar:
+  structure:
+    left:  [intro, reference, articles, shiny, news]
+    right: [github, search]
   components:
     shiny:
-      text: Web app
+      text: Web App
       href: app/
 ```
 to your package's `inst\_pkgdown.yml`; and `shinylive` to your `DESCRIPTION`'s `Config/Needs/website: ` entry.
