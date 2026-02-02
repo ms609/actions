@@ -80,15 +80,12 @@ runs:
           
           pkg_name <- read.dcf("DESCRIPTION")[, "Package"]
           source_path <- "${{ inputs.shinylive-app }}"
-          installed_path <- system.file(basename(source_path), package = pkg_name)
+          final_app_dir <- if (dir.exists(source_path)) source_path else 
+            system.file(basename(source_path), package = pkg_name)
           
-          if (dir.exists(source_path) && file.exists(file.path(source_path, "app.R"))) {
-            final_app_dir <- source_path
-          } else if (installed_path != "" && file.exists(file.path(installed_path, "app.R"))) {
-            final_app_dir <- installed_path
+          if (dir.exists(final_app_dir) && file.exists(file.path(final_app_dir, "app.R"))) {
           } else {
-            dir(".")
-            stop(paste("Could not find app.R in", source_path, "or", installed_path, ". Do you need to fetch submodules?"))
+            stop(paste("Could not find app.R in", installed_path, ". Do you need to fetch submodules?"))
           }
           
           if (!requireNamespace("shinylive", quietly = TRUE)) {
@@ -99,12 +96,8 @@ runs:
             appdir = final_app_dir,
             destdir = "docs/articles/app"
           )
-          
-          if (should_deploy) {
-            pkgdown::deploy_to_branch(devel = FALSE, install = FALSE, new_process = FALSE)
-          }
-        } else if (should_deploy) {
-          pkgdown::deploy_to_branch(devel = FALSE, install = FALSE, new_process = FALSE)
+          file.create("docs/.nojekyll")
+         
         } else {
           pkgdown::build_site(install = FALSE, new_process = FALSE)
         }
@@ -112,3 +105,11 @@ runs:
         if (length(warnings()) > 0) {
           print(warnings())
         }
+
+    - name: Deploy to GitHub Pages
+      if: ${{ inputs.deploy == 'true' }}
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: docs
+        branch: gh-pages
+        clean: true
