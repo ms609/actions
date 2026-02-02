@@ -68,6 +68,10 @@ runs:
         extra-packages: local::., any::pkgdown
         needs: website
 
+    - run: dir
+
+    - run: dir inst
+
     - name: Build and optionally deploy
       run: |
         is_shinylive <- "${{ inputs.shinylive-app }}" != ""
@@ -76,9 +80,10 @@ runs:
         if (is_shinylive) {
           pkgdown::build_site(install = FALSE, new_process = FALSE)
           
-          if (!requireNamespace("shinylive", quiet = TRUE)) {
+          if (!requireNamespace("shinylive", quietly = TRUE)) {
             install.packages("shinylive")
           }
+
           shinylive::export(
             appdir = "${{ inputs.shinylive-app }}",
             destdir = "docs/articles/app"
