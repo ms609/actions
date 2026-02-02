@@ -60,15 +60,21 @@ To add additional elements to the site before deploying, run this script with
 
 then manually deploy the site as an additional step.
 
-To install a [ShinyLive]() app to `articles/app`, use
+To install a [ShinyLive](https://posit-dev.github.io/r-shinylive/) app to `app`, use
 ```yml
         with:
-          shinylive-app: inst/MyAppDir # assuming your Shiny app directory is in `inst`
+          shinylive-app: MyAppDir # Directory containing app.R
 ```
 
 You may also need to add 
 ```yml
 exclude:
-  - articles/app
+  - app
+
+navbar:
+  components:
+    shiny:
+      text: Web app
+      href: app/
 ```
 to your package's `inst\_pkgdown.yml`; and `shinylive` to your `DESCRIPTION`'s `Config/Needs/website: ` entry.

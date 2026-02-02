@@ -26,7 +26,7 @@ inputs:
     required: false
     default: 'true'
   shinylive-app:
-    description: Path to a Shiny app to be converted via Shinylive (e.g., 'inst/MyApp')
+    description: Path to a folder containing `app.R`, a Shiny app to be converted via Shinylive
     required: false
     default: ''
 
@@ -94,7 +94,7 @@ runs:
           
           shinylive::export(
             appdir = final_app_dir,
-            destdir = "docs/articles/app"
+            destdir = "docs/app"
           )
           file.create("docs/.nojekyll")
          
