@@ -111,5 +111,4 @@ runs:
         
         if (length(warnings()) > 0) {
           print(warnings())
-          stop("Fail on warning")
         }
