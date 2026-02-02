@@ -68,9 +68,6 @@ runs:
         extra-packages: local::., any::pkgdown
         needs: website
 
-    - run: dir
-
-    - run: dir inst
 
     - name: Build and optionally deploy
       shell: Rscript {0}
