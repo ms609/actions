@@ -112,4 +112,4 @@ runs:
       with:
         folder: docs
         branch: gh-pages
-        clean: true
+        clean: false
