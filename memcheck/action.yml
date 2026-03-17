@@ -15,11 +15,14 @@ inputs:
 
 runs:
   using: 'composite'
-  env:
-    # Suppress ASan link-order warnings that appear when packages compiled with
-    # AddressSanitizer are loaded under valgrind without ASan being preloaded.
-    ASAN_OPTIONS: verify_asan_link_order=0
   steps:
+    - name: Set environment variables
+      run: |
+        # Suppress ASan link-order warnings when packages compiled with
+        # AddressSanitizer are loaded under valgrind without ASan preloaded.
+        echo "ASAN_OPTIONS=verify_asan_link_order=0" >> "$GITHUB_ENV"
+      shell: bash
+
     - name: Checkout git repo
       uses: actions/checkout@v5
       with:
