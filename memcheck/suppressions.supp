@@ -31,12 +31,10 @@
    r_lazyload_compression
    Memcheck:Leak
    match-leak-kinds: possible
-   ...
    fun:malloc
-   ...
    fun:libdeflate_alloc_compressor_ex
+   ...
    fun:R_lazyLoadDBinsertValue
-   fun:Rf_eval
    ...
 }
 
@@ -61,6 +59,24 @@
    fun:malloc
    ...
    fun:resize_scopes
+   ...
+}
+
+
+# ── PROJ / SQLite ─────────────────────────────────────────────────────────────
+# PROJ reads its coordinate-reference-system database (proj.db) via SQLite
+# on first use. The SQLite page cache and B-tree cursor state are not freed
+# at process exit; this is by design in SQLite's shared-cache architecture.
+# Anchored on sqlite3_step called from within libproj to avoid suppressing
+# legitimate SQLite use by the package itself.
+
+{
+   proj_sqlite3_lookup
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:sqlite3_step
+   obj:*/libproj.so*
    ...
 }
 
