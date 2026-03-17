@@ -47,13 +47,12 @@ runs:
       
     - name: Install package dependencies
       run: |
-        install.packages("devtools")
-        devtools::install_deps(dependencies = TRUE)
+        pak::local_install_deps(dependencies = TRUE)
       shell: Rscript {0}
       
     - name: Install package
       run: |
-        devtools::install(keep_source = TRUE)
+        pak::local_install(dependencies = FALSE)
       shell: Rscript {0}
 
     - name: valgrind - memcheck tests
