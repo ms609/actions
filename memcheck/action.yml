@@ -15,6 +15,10 @@ inputs:
 
 runs:
   using: 'composite'
+  env:
+    # Suppress ASan link-order warnings that appear when packages compiled with
+    # AddressSanitizer are loaded under valgrind without ASan being preloaded.
+    ASAN_OPTIONS: verify_asan_link_order=0
   steps:
     - name: Checkout git repo
       uses: actions/checkout@v5
@@ -28,7 +32,7 @@ runs:
           | sed 's/^Additional_repositories:[[:space:]]*//' || true)
         # Combine with any caller-supplied extra-repositories
         all_repos=$(printf '%s\n' "$repos" "${{ inputs.extra-repositories }}" \
-          | grep -v '^$' | tr '\n' ' ')
+          | grep -v '^$' | tr '\n' ' ' || true)
         echo "repos=$all_repos" >> "$GITHUB_OUTPUT"
       shell: bash
 
