@@ -1,23 +1,45 @@
-{
-   RCurl-definite-leak
-   Memcheck:Leak
-   fun:calloc
-   obj:/home/runner/work/_temp/Library/RCurl/libs/RCurl.so
-}
+# Valgrind memcheck suppressions for R package testing
+#
+# Philosophy: suppress known false positives from system libraries
+# (fontconfig, pango, expat, OpenSSL, glibc dlopen) and R internals.
+# Suppressions are anchored on named API functions wherever possible,
+# with ... to absorb variable-depth anonymous frames, so they stay
+# robust across library version changes without over-suppressing.
+#
+# Only definite and indirect leaks count as errors (--errors-for-leak-kinds=definite).
+# Possibly-lost suppressions reduce log noise but do not affect pass/fail.
+
+
+# ── R internals ───────────────────────────────────────────────────────────────
 
 {
-   do_readLines_leak
+   r_do_readLines
    Memcheck:Leak
    fun:malloc
    fun:do_readLines
 }
+
 {
-   Rconnection_leak
+   r_new_connection
    Memcheck:Leak
    fun:calloc
    fun:R_newConnection
    obj:/usr/lib/R/lib/libR.so*
 }
+
+{
+   r_lazyload_compression
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:malloc
+   ...
+   fun:libdeflate_alloc_compressor_ex
+   fun:R_lazyLoadDBinsertValue
+   fun:Rf_eval
+   ...
+}
+
 {
    cli_thread_tls
    Memcheck:Leak
@@ -25,8 +47,119 @@
    ...
    fun:pthread_create@@GLIBC*
 }
+
+
+# ── dlopen / dynamic linker ───────────────────────────────────────────────────
+# glibc resizes its internal scope array (resize_scopes) when dlopen loads a
+# new shared library. R triggers this via AddDLL. The allocation is owned by
+# the dynamic linker and never freed; it is not a package bug.
+
 {
-   pango_cairo_create_layout 
+   dlopen_resize_scopes
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:resize_scopes
+   ...
+}
+
+
+# ── OpenSSL ───────────────────────────────────────────────────────────────────
+
+{
+   OpenSSL_leaks
+   Memcheck:Leak
+   match-leak-kinds: definite,indirect
+   obj:*/libcrypto.so.3
+}
+
+
+# ── RCurl ─────────────────────────────────────────────────────────────────────
+
+{
+   RCurl_calloc
+   Memcheck:Leak
+   fun:calloc
+   obj:/home/runner/work/_temp/Library/RCurl/libs/RCurl.so
+}
+
+
+# ── fontconfig ────────────────────────────────────────────────────────────────
+# fontconfig maintains internal font-matching caches that are not freed at
+# process exit. All of these are triggered by R's graphics engine calling
+# pango/cairo for text rendering, not by the package under test.
+#
+# We anchor on named fontconfig/pango API functions and use ... to absorb the
+# variable number of anonymous internal frames, which differ by font query
+# complexity and library version.
+
+# FcConfigSubstituteWithPat: called by pangocairo for every text measurement
+# op. The upper anchor (pangocairo) ensures we only suppress the graphics path.
+{
+   fontconfig_FcConfigSubstituteWithPat
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:FcConfigSubstituteWithPat
+   obj:*/libpangocairo-1.0.so*
+   ...
+}
+
+# FcDefaultSubstitute: fills in default values for unspecified pattern fields.
+{
+   fontconfig_FcDefaultSubstitute
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:FcDefaultSubstitute
+   obj:*/libpangoft2-1.0.so*
+   ...
+}
+
+# realloc inside libfontconfig: internal buffer growth during font matching.
+# Covers FcFontRenderPrepare, FcDefaultSubstitute (realloc variant), and
+# similar realloc-based patterns that show as definite or possible.
+{
+   fontconfig_realloc
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   fun:realloc
+   obj:*/libfontconfig.so*
+   ...
+}
+
+# FcFontSetSort / FcFontSetAdd: sorted font-set construction for matching.
+{
+   fontconfig_FcFontSetSort
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:FcFontSetSort
+   obj:*/libpangoft2-1.0.so*
+   ...
+}
+
+# fontconfig parsing fonts.conf / conf.d XML files via expat on first use.
+{
+   fontconfig_xml_parse
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:XML_ParseBuffer
+   obj:*/libfontconfig.so*
+   ...
+}
+
+
+# ── pango / cairo ─────────────────────────────────────────────────────────────
+# pango keeps per-process font context state in GObject/GLib reference-counted
+# structures that are intentionally not freed at exit.
+
+# pango_cairo_create_layout initialises a per-process PangoCairoFontMap and
+# language default, allocating a context that persists for the process lifetime.
+{
+   pango_cairo_create_layout
    Memcheck:Leak
    match-leak-kinds: possible
    fun:calloc
@@ -34,263 +167,18 @@
    fun:pango_language_from_string
    fun:pango_language_get_default
    obj:*/libpango-1.0.so*
-   fun:g_type_create_instance
-   obj:*/libgobject-2.0.so*
-   fun:g_object_new_with_properties
-   fun:g_object_new
-   fun:pango_font_map_create_context
-   fun:pango_cairo_create_context
-   fun:pango_cairo_create_layout
-}
-{
-   pango_general_leaks
-   Memcheck:Leak
    ...
-   obj:*/libpango-1.0.so.*
-   obj:*/libpangoft2-1.0.so.*
-   obj:*/libpangocairo-1.0.so.*
-   obj:*/libpangoapp-1.0.so.*
-}
-{
-   r_internal_compression_leak
-   Memcheck:Leak
-   match-leak-kinds: possible
-   ...
-   fun:malloc
-   ...
-   fun:libdeflate_alloc_compressor_ex
-   fun:R_lazyLoadDBinsertValue
-   fun:Rf_eval
-   ...
-}
-{
-   FcFontSetMatch_clone
-   Memcheck:Leak
-   fun:calloc
-   fun:FcPatternCreate
-   fun:FcFontRenderPrepare
-   fun:FcFontSetMatch
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libglib-2.0.so*
-}
-{
-   <PangoLeaks>
-   Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   fun:g_atomic_rc_box_alloc0
-   obj:*/libpango-1.0.so*
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libcairo.so*
-}
-{
-   <FcFontSetSortLeak>
-   Memcheck:Leak
-   fun:malloc
-   fun:FcFontSetSort
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libglib-2.0.so*
 }
 
+# GObject g_atomic_rc_box_alloc0: reference-counted pango internal allocations
+# (PangoLayoutLine, PangoAnalysis, etc.) via g_malloc0.
 {
-   <PangoAgain>
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:realloc
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   fun:FcDefaultSubstitute
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-}
-{
-   <PangoFontRenderPrep>
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:realloc
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   fun:FcFontRenderPrepare
-   fun:FcFontSetMatch
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libglib-2.0.so*
-}
-{
-   <Pango_FcDefaultSubstitute>
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:realloc
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   fun:FcDefaultSubstitute
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpangocairo-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-}
-
-{
-   <Pango_layout>
+   pango_gobject_rc_box
    Memcheck:Leak
    match-leak-kinds: possible
    fun:calloc
    fun:g_malloc0
    fun:g_atomic_rc_box_alloc0
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-}
-
-{
-   <pango-calloc>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:calloc
-   fun:g_malloc0
-   fun:g_atomic_rc_box_alloc0
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpangocairo-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:FcFontSetAdd
-   fun:FcFontSetSort
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libglib-2.0.so.0.8000.0
-
-}
-{
-   OpenSSL_leaks
-   Memcheck:Leak
-   match-leak-kinds: definite,indirect
-   obj:*/libcrypto.so.3
-}
-{
-   <libfontconfig>
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   obj:*/libexpat.so*
-   obj:*/libexpat.so*
-   obj:*/libexpat.so*
-   obj:*/libexpat.so*
-   obj:*/libexpat.so*
-}
-{
-   <suppress_fontconfig_leak>
-   Memcheck:Leak
-   match-leak-kinds: all
-   fun:malloc
-   fun:strdup
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   fun:FcConfigSubstituteWithPat
-   obj:*/libpangocairo-1.0.so*
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-}
-
-{
-   <suppress_fontconfig_leak>
-   Memcheck:Leak
-   match-leak-kinds: all
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
+   obj:*/libpango*.so*
    ...
-}
-{
-   LibDeflate
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:libdeflate_alloc_compressor_ex
-   fun:R_compress1
-   fun:R_lazyLoadDBinsertValue
-   fun:do_lazyLoadDBinsertValue
-   fun:bcEval_loop
-   fun:bcEval
-   fun:bcEval
-   fun:Rf_eval
-   fun:R_execClosure
-   fun:applyClosure_core
-   fun:Rf_applyClosure
-   fun:Rf_eval
-   fun:Rf_ReplIteration
-   fun:R_ReplConsole
-}
-{
-   PangoLayout
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:realloc
-   obj:*/libfontconfig.so*
-   obj:*/libfontconfig.so*
-   fun:FcDefaultSubstitute
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   fun:pango_layout_get_size
-   obj:*/libpango-1.0.so*
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:strdup
-   obj:*/libfontconfig.so*
-   ...
-   fun:FcConfigSubstituteWithPat
-   obj:*/libpangocairo-1.0.so*
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   fun:pango_layout_get_line
-   fun:PG_text_extents
-   fun:PangoCairo_StrWidth
-   fun:GEStrWidth
-}
-{
-   PangoLine
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:calloc
-   fun:g_malloc0
-   fun:g_atomic_rc_box_alloc0
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpangoft2-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   obj:*/libpango-1.0.so*
-   fun:pango_layout_get_size
-   obj:*/libpango-1.0.so*
-   fun:pango_layout_get_line
 }
