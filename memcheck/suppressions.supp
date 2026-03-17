@@ -222,3 +222,46 @@
    obj:*/libpango*.so*
    ...
 }
+
+# pango_layout_get_line triggers fontconfig font-attribute lookups (FcValueSave,
+# FcPatternBuild, calloc inside libfontconfig) that are not freed after text
+# measurement. Anchored on pango_layout_get_line because it is only ever called
+# from R's graphics engine, never from package code.
+{
+   pango_layout_get_line_fontconfig
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:pango_layout_get_line
+   ...
+}
+
+
+# ── fontconfig internal recursion ─────────────────────────────────────────────
+# fontconfig's pattern-matching and XML config parser recurse through fully
+# anonymous frames (no exported symbols), so no named-function anchor is
+# available. These are safely anchored on the allocator + first obj frame.
+
+# strdup-based internal string copies (e.g. FcValueSave cascades, XML parse
+# recursion). Stacks: malloc → strdup → ??? (libfontconfig) × N
+{
+   fontconfig_strdup_internal
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:strdup
+   obj:*/libfontconfig.so*
+   ...
+}
+
+# malloc-based internal buffer allocation within fontconfig recursion.
+# Stacks: malloc → ??? (libfontconfig) × N  (no strdup intermediary).
+{
+   fontconfig_malloc_internal
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   obj:*/libfontconfig.so*
+   obj:*/libfontconfig.so*
+   ...
+}
