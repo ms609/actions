@@ -48,9 +48,10 @@
 
 
 # ── dlopen / dynamic linker ───────────────────────────────────────────────────
-# glibc resizes its internal scope array (resize_scopes) when dlopen loads a
-# new shared library. R triggers this via AddDLL. The allocation is owned by
-# the dynamic linker and never freed; it is not a package bug.
+# glibc performs two kinds of internal bookkeeping allocations when dlopen
+# loads a new shared library; neither is a package bug:
+#   resize_scopes  - grows the scope array for symbol lookup (definite)
+#   _dl_resize_dtv - grows the TLS (thread-local storage) descriptor vector (possible)
 
 {
    dlopen_resize_scopes
@@ -62,21 +63,29 @@
    ...
 }
 
+{
+   dlopen_dtv_resize
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:_dl_resize_dtv
+   ...
+}
 
-# ── PROJ / SQLite ─────────────────────────────────────────────────────────────
-# PROJ reads its coordinate-reference-system database (proj.db) via SQLite
-# on first use. The SQLite page cache and B-tree cursor state are not freed
-# at process exit; this is by design in SQLite's shared-cache architecture.
-# Anchored on sqlite3_step called from within libproj to avoid suppressing
-# legitimate SQLite use by the package itself.
+
+# ── SQLite ────────────────────────────────────────────────────────────────────
+# SQLite's B-tree page cache and shared-cache infrastructure are not freed at
+# process exit. These are triggered by spatial packages (PROJ, sf, …) reading
+# their databases. sqlite3Malloc is an SQLite-private allocator never called
+# by user or package code directly, so suppressing all paths through it is safe.
 
 {
-   proj_sqlite3_lookup
+   sqlite3_internal_cache
    Memcheck:Leak
    match-leak-kinds: possible
    ...
-   fun:sqlite3_step
-   obj:*/libproj.so*
+   fun:sqlite3Malloc
    ...
 }
 
@@ -110,15 +119,16 @@
 # variable number of anonymous internal frames, which differ by font query
 # complexity and library version.
 
-# FcConfigSubstituteWithPat: called by pangocairo for every text measurement
-# op. The upper anchor (pangocairo) ensures we only suppress the graphics path.
+# FcConfigSubstituteWithPat: called for every text measurement op, both from
+# the main pangocairo path and from pango worker threads (via glib/start_thread).
+# FcConfigSubstituteWithPat is a fontconfig-internal function not called by
+# package code, so suppressing all paths through it is safe.
 {
    fontconfig_FcConfigSubstituteWithPat
    Memcheck:Leak
    match-leak-kinds: possible
    ...
    fun:FcConfigSubstituteWithPat
-   obj:*/libpangocairo-1.0.so*
    ...
 }
 
@@ -129,6 +139,18 @@
    match-leak-kinds: possible
    ...
    fun:FcDefaultSubstitute
+   ...
+}
+
+# FcFontSetMatch / FcFontRenderPrepare: font selection run in a pango worker
+# thread (glib thread pool → start_thread → clone). Leaks pattern copies that
+# are never returned to the caller.
+{
+   fontconfig_FcFontSetMatch_thread
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:FcFontSetMatch
    obj:*/libpangoft2-1.0.so*
    ...
 }
@@ -157,10 +179,12 @@
 }
 
 # fontconfig parsing fonts.conf / conf.d XML files via expat on first use.
+# These show as definite because the root pointer is held in an expat struct
+# that is freed after the parse, leaving the allocated strings unreachable.
 {
    fontconfig_xml_parse
    Memcheck:Leak
-   match-leak-kinds: possible
+   match-leak-kinds: definite,possible
    ...
    fun:XML_ParseBuffer
    obj:*/libfontconfig.so*
