@@ -109,7 +109,6 @@ runs:
     - name: valgrind - memcheck vignettes
       if: ${{ inputs.test == 'vignettes' || inputs.test == 'all' }}
       run: |
-        sudo apt-get install texlive-latex-base
         R -d "valgrind --tool=memcheck \
         --leak-check=full \
         --errors-for-leak-kinds=definite \

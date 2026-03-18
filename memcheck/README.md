@@ -69,3 +69,10 @@ jobs:
 
 For simplicity, removing the `strategy:` and `with:` blocks will test the three
 aspects of a package in serial.
+
+
+Note that vignettes should be configured to build to HTML output as the first
+entry in their `yml` header.
+Otherwise LaTeX packages should be installed before calling this action,
+e.g. with 
+`sudo apt-get install texlive-latex-base texlive-latex-recommended texlive-latex-extra`.
