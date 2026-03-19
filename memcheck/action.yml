@@ -67,6 +67,7 @@ runs:
       uses: r-lib/actions/setup-r-dependencies@v2
       with:
         dependencies: ${{ (inputs.test == 'vignettes' || inputs.test == 'all') && '"soft"' || '"hard"' }}
+        extra-packages: ${{ (inputs.test == 'examples' || inputs.test == 'all') && 'devtools' || '' }}
         needs: memcheck
 
     - name: Install package
@@ -86,11 +87,6 @@ runs:
         --error-exitcode=1" \
         --vanilla \
         -e "testthat::test_local()"
-      shell: bash
-
-    - name: Install devtools for run_examples
-      if: ${{ inputs.test == 'examples' || inputs.test == 'all' }}
-      run: Rscript -e "pak::pkg_install('devtools')"
       shell: bash
 
     - name: valgrind - memcheck examples
