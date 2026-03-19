@@ -88,6 +88,11 @@ runs:
         -e "testthat::test_local()"
       shell: bash
 
+    - name: Install devtools for run_examples
+      if: ${{ inputs.test == 'examples' || inputs.test == 'all' }}
+      run: Rscript -e "pak::pkg_install('devtools')"
+      shell: bash
+
     - name: valgrind - memcheck examples
       if: ${{ inputs.test == 'examples' || inputs.test == 'all' }}
       run: |
@@ -99,7 +104,7 @@ runs:
         --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
-        -e "pkgload::run_examples()"
+        -e "devtools::run_examples()"
       shell: bash
 
     - name: Set up pandoc
