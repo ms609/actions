@@ -85,7 +85,7 @@ runs:
         --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
-        -e "devtools::test()"
+        -e "testthat::test_local()"
       shell: bash
 
     - name: valgrind - memcheck examples
@@ -99,7 +99,7 @@ runs:
         --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
-        -e "devtools::run_examples()"
+        -e "pkgload::run_examples()"
       shell: bash
 
     - name: Set up pandoc
