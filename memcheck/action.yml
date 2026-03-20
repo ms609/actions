@@ -74,6 +74,20 @@ runs:
         pak::local_install(dependencies = FALSE)
       shell: Rscript {0}
 
+    - name: Reinstall ASan-linked packages from source
+      run: |
+        # RSPM binaries may link to libasan.so, which crashes under valgrind
+        # (shadow memory conflict). Detect and rebuild from source.
+        r_libs="${R_LIBS_USER:-$(Rscript -e 'cat(.libPaths()[1])')}"
+        for so in $(find "$r_libs" -name "*.so" -type f 2>/dev/null); do
+          if ldd "$so" 2>/dev/null | grep -q libasan; then
+            pkg=$(basename "$(dirname "$(dirname "$so")")")
+            echo "::warning::$pkg links to libasan — reinstalling from source"
+            Rscript -e "install.packages('$pkg', type='source')"
+          fi
+        done
+      shell: bash
+
     - name: valgrind - memcheck tests
       if: ${{ inputs.test == 'tests' || inputs.test == 'all' }}
       run: |
