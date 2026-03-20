@@ -57,10 +57,9 @@ runs:
       
     - name: Configure compiler flags for debugging
       run: |
-        if [ -d "src" ]; then
-          echo "PKG_CFLAGS = -g -O0" > src/Makevars
-          echo "PKG_CXXFLAGS = -g -O0" >> src/Makevars
-        fi
+        mkdir -p ~/.R
+        echo "PKG_CFLAGS = -g -O0" > ~/.R/Makevars
+        echo "PKG_CXXFLAGS = -g -O0" >> ~/.R/Makevars
       shell: bash
       
     - name: Install package dependencies
