@@ -1,0 +1,98 @@
+name: Check for AddressSanitizer errors
+description: |
+  Run tests, examples, and/or vignettes under GCC AddressSanitizer (ASAN)
+  and Undefined Behaviour Sanitizer (UBSAN).
+
+  The calling workflow must run this action inside the r-hub gcc-asan
+  container (or equivalent).  Example:
+
+    jobs:
+      asan:
+        runs-on: ubuntu-latest
+        container:
+          image: ghcr.io/r-hub/containers/gcc-asan:latest
+        steps:
+          - uses: ms609/actions/asan@main
+            with:
+              test: tests
+
+inputs:
+    test:
+      description: >
+        Which aspect of the package to test.
+        Select "tests", "examples", "vignettes" or "all".
+      required: false
+      default: all
+    extra-repositories:
+      description: Extra CRAN-like repositories for dependency installation.
+      required: false
+    submodules:
+      description: Whether to checkout submodules. Passed to actions/checkout.
+      required: false
+      default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout git repo
+      uses: actions/checkout@v5
+      with:
+        submodules: ${{ inputs.submodules }}
+
+    - name: Read Additional_repositories from DESCRIPTION
+      id: desc-repos
+      run: |
+        repos=$(grep "^Additional_repositories:" DESCRIPTION 2>/dev/null \
+          | sed 's/^Additional_repositories:[[:space:]]*//' || true)
+        all_repos=$(printf '%s\n' "$repos" "${{ inputs.extra-repositories }}" \
+          | grep -v '^$' | tr '\n' ',' | sed 's/,$//' || true)
+        echo "repos=$all_repos" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Configure additional repositories
+      if: steps.desc-repos.outputs.repos != ''
+      run: |
+        repos <- strsplit("${{ steps.desc-repos.outputs.repos }}", ",")[[1]]
+        cur <- getOption("repos")
+        options(repos = c(cur, structure(repos, names = paste0("extra", seq_along(repos)))))
+        cat("Repos:", paste(getOption("repos"), collapse = "\n"), "\n")
+      shell: Rscript {0}
+
+    - name: Install package dependencies
+      run: |
+        deps <- if ("${{ inputs.test }}" %in% c("vignettes", "all")) NA else TRUE
+        extra <- if ("${{ inputs.test }}" %in% c("examples", "all")) "devtools" else character()
+        pak::local_install_deps(dependencies = deps)
+        if (length(extra)) pak::pak(extra)
+      shell: Rscript {0}
+
+    - name: Install package
+      run: |
+        pak::local_install(dependencies = FALSE)
+      shell: Rscript {0}
+
+    - name: Install pandoc (for vignettes)
+      if: inputs.test == 'vignettes' || inputs.test == 'all'
+      run: |
+        if ! command -v pandoc &> /dev/null; then
+          dnf install -y pandoc || true
+        fi
+      shell: bash
+
+    - name: ASAN - memcheck tests
+      if: inputs.test == 'tests' || inputs.test == 'all'
+      run: |
+        Rscript memcheck/tests.R
+      shell: bash
+
+    - name: ASAN - memcheck examples
+      if: inputs.test == 'examples' || inputs.test == 'all'
+      run: |
+        Rscript memcheck/examples.R
+      shell: bash
+
+    - name: ASAN - memcheck vignettes
+      if: inputs.test == 'vignettes' || inputs.test == 'all'
+      run: |
+        Rscript memcheck/vignettes.R
+      shell: bash
