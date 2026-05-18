@@ -60,9 +60,8 @@ runs:
 
     - name: Install package dependencies
       run: |
-        deps <- if ("${{ inputs.test }}" %in% c("vignettes", "all")) NA else TRUE
         extra <- if ("${{ inputs.test }}" %in% c("examples", "all")) "devtools" else character()
-        pak::local_install_deps(dependencies = deps)
+        pak::local_install_deps(dependencies = TRUE)
         if (length(extra)) pak::pak(extra)
         # Honour DESCRIPTION's Config/Needs/memcheck (e.g. pkgdown for vignettes.R)
         desc <- read.dcf("DESCRIPTION")
