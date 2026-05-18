@@ -64,6 +64,14 @@ runs:
         extra <- if ("${{ inputs.test }}" %in% c("examples", "all")) "devtools" else character()
         pak::local_install_deps(dependencies = deps)
         if (length(extra)) pak::pak(extra)
+        # Honour DESCRIPTION's Config/Needs/memcheck (e.g. pkgdown for vignettes.R)
+        desc <- read.dcf("DESCRIPTION")
+        field <- "Config/Needs/memcheck"
+        if (field %in% colnames(desc)) {
+          pkgs <- strsplit(gsub("[[:space:]]+", "", desc[, field]), ",")[[1]]
+          pkgs <- pkgs[nzchar(pkgs)]
+          if (length(pkgs)) pak::pak(pkgs)
+        }
       shell: Rscript {0}
 
     - name: Install package
