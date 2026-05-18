@@ -30,6 +30,26 @@ inputs:
       description: Whether to checkout submodules. Passed to actions/checkout.
       required: false
       default: 'false'
+    asan-options:
+      description: >
+        ASAN_OPTIONS for the test runs. The default mirrors CRAN's
+        gcc-ASAN configuration: detect_leaks=0 silences noisy reports
+        from libcrypto, libxml2 and other third-party libraries (and
+        from binaries like /usr/bin/sed that test discovery shells
+        out to); detect_container_overflow=1 catches use beyond the
+        end of std::vector and similar; verify_asan_link_order=0
+        suppresses a load-order warning that fires harmlessly inside
+        the r-hub container. Override to detect_leaks=1 (with your
+        own LSan suppression file) when debugging package leaks.
+      required: false
+      default: detect_leaks=0:detect_container_overflow=1:verify_asan_link_order=0
+    ubsan-options:
+      description: >
+        UBSAN_OPTIONS for the test runs. print_stacktrace=1 is
+        required for UBSan reports to include frames - without it
+        you get the error category but no location.
+      required: false
+      default: print_stacktrace=1
 
 runs:
   using: 'composite'
@@ -88,18 +108,27 @@ runs:
 
     - name: ASAN - memcheck tests
       if: inputs.test == 'tests' || inputs.test == 'all'
+      env:
+        ASAN_OPTIONS: ${{ inputs.asan-options }}
+        UBSAN_OPTIONS: ${{ inputs.ubsan-options }}
       run: |
         Rscript memcheck/tests.R
       shell: bash
 
     - name: ASAN - memcheck examples
       if: inputs.test == 'examples' || inputs.test == 'all'
+      env:
+        ASAN_OPTIONS: ${{ inputs.asan-options }}
+        UBSAN_OPTIONS: ${{ inputs.ubsan-options }}
       run: |
         Rscript memcheck/examples.R
       shell: bash
 
     - name: ASAN - memcheck vignettes
       if: inputs.test == 'vignettes' || inputs.test == 'all'
+      env:
+        ASAN_OPTIONS: ${{ inputs.asan-options }}
+        UBSAN_OPTIONS: ${{ inputs.ubsan-options }}
       run: |
         Rscript memcheck/vignettes.R
       shell: bash
