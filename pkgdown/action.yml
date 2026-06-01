@@ -2,7 +2,11 @@ name: Build package documentation
 description: use pkgdown to build and deploy package documentation
 inputs:
   extra-repositories:
-    description: Extra repositories from which to download required packages; passed to the setup-r step.
+    description: >
+      Extra repositories from which to download required packages; passed to
+      the setup-r step. The package's own `Additional_repositories` (from
+      DESCRIPTION) is merged in automatically, so a drat declared there need
+      not be repeated here.
     required: false
     default: ''
   submodules:
@@ -39,10 +43,45 @@ runs:
 
     - uses: r-lib/actions/setup-pandoc@v2
 
+    # setup-r seeds `repos` only from its extra-repositories input, and pak's
+    # lockfile resolution ignores DESCRIPTION's Additional_repositories. So a
+    # drat declared there (the base-R `install.packages` idiom) is invisible
+    # during dependency resolution and packages only on it (e.g. dev TreeTools
+    # / TreeSearch) fail with "Can't install dependency". Surface it here and
+    # merge with any explicitly-provided repositories.
+    - name: Merge Additional_repositories into extra repositories
+      id: extra-repos
+      shell: bash
+      run: |
+        extract_field() {
+          # Print the value of a single DCF field, including indented
+          # continuation lines, with the field name stripped.
+          awk -v field="$1" '
+            $0 ~ "^" field ":" { grab = 1; sub("^" field ":[ \t]*", ""); print; next }
+            grab && /^[ \t]/   { print; next }
+            grab               { grab = 0 }
+          ' DESCRIPTION
+        }
+        merged=$(
+          {
+            printf '%s\n' "${{ inputs.extra-repositories }}"
+            [ -f DESCRIPTION ] && extract_field "Additional_repositories"
+          } \
+            | tr ',' '\n' \
+            | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+            | grep -E '^https?://' \
+            | awk '!seen[$0]++'
+        ) || true
+        {
+          echo 'repositories<<__EOF__'
+          echo "$merged"
+          echo '__EOF__'
+        } >> "$GITHUB_OUTPUT"
+
     - uses: r-lib/actions/setup-r@v2
       with:
         use-public-rspm: true
-        extra-repositories: ${{ inputs.extra-repositories }}
+        extra-repositories: ${{ steps.extra-repos.outputs.repositories }}
 
     - name: Install Mac OS dependencies
       if: runner.os == 'MacOS'
