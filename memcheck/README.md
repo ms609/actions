@@ -8,7 +8,7 @@ This GitHub action checks C/C++ code within a package for memory errors using
 1. Add a line to your package's `DESCRIPTION` file:
 
 ```
-Config/Needs/memcheck: testthat
+Config/Needs/memcheck: pkgdown, testthat
 ```
 
 Add any other packages required to run your examples or tests, separating by
@@ -72,6 +72,11 @@ jobs:
 
 For simplicity, removing the `strategy:` and `with:` blocks will test the three
 aspects of a package in serial.
+
+3. Create a directory `memcheck` (and add this to your `.Rbuildignore` file),
+   copied from https://github.com/ms609/TreeTools/tree/main/memcheck
+   
+   Update the name of the package to match your own.
 
 
 Note that vignettes should be configured to build to HTML output as the first
