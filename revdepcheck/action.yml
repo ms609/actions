@@ -1,5 +1,5 @@
-name: Build package documentation
-description: use pkgdown to build and deploy package documentation
+name: Reverse dependency check
+description: run revdepcheck::revdep_check(), passing when there are no reverse dependencies
 inputs:
     deps:
       description: Dependencies to check, used as "dependencies" parameter in "revdep_check()".
@@ -35,11 +35,37 @@ runs:
       env:
         _R_CHECK_CRAN_INCOMING_REMOTE_: false
       run: |
-        revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
-                                  num_workers = 3,
-                                  dependencies = ${{ inputs.deps }})
-        problems <- readLines('revdep/problems.md', warn = FALSE)
-        if (length(problems) > 1) stop(paste0(problems, collapse= "\n"))
+        deps <- ${{ inputs.deps }}
+        pkg <- read.dcf("DESCRIPTION", fields = "Package")[1, 1]
+
+        ## revdep_check() installs the package's own CRAN release as a baseline
+        ## to diff old-vs-new, so it errors for any package not (yet) on CRAN --
+        ## even one with zero reverse dependencies. Resolve the revdep list up
+        ## front and treat "none" as a pass, only invoking revdep_check() when
+        ## there is something to check (in which case the package is on CRAN and
+        ## the baseline install succeeds).
+        revdeps <- tryCatch(
+          revdepcheck::cran_revdeps(pkg, dependencies = deps),
+          error = function(e) {
+            db <- suppressWarnings(available.packages())
+            tools::package_dependencies(pkg, db = db, which = deps,
+                                        reverse = TRUE)[[pkg]]
+          }
+        )
+        revdeps <- setdiff(revdeps, pkg)
+
+        if (length(revdeps) == 0) {
+          message("No reverse dependencies (", paste(deps, collapse = ", "),
+                  ") for '", pkg, "'; nothing to check.")
+        } else {
+          revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
+                                    num_workers = 3,
+                                    dependencies = deps)
+          if (file.exists("revdep/problems.md")) {
+            problems <- readLines("revdep/problems.md", warn = FALSE)
+            if (length(problems) > 1) stop(paste0(problems, collapse = "\n"))
+          }
+        }
       shell: Rscript {0}
 
     - name: Upload check results
