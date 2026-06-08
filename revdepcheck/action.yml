@@ -38,6 +38,11 @@ runs:
         deps <- ${{ inputs.deps }}
         pkg <- read.dcf("DESCRIPTION", fields = "Package")[1, 1]
 
+        ## RSPM binary repos omit dependency fields from PACKAGES, breaking
+        ## available.packages()-based revdep lookups.  Force CRAN source repos
+        ## for this script so all metadata fetches include "Depends" etc.
+        options(repos = c(CRAN = "https://cloud.r-project.org"))
+
         ## revdep_check() installs the package's own CRAN release as a baseline
         ## to diff old-vs-new, so it errors for any package not (yet) on CRAN --
         ## even one with zero reverse dependencies. Resolve the revdep list up
@@ -48,12 +53,6 @@ runs:
           revdepcheck::cran_revdeps(pkg, dependencies = deps),
           error = function(e) {
             db <- suppressWarnings(available.packages())
-            ## R 4.6.0 wraps available.packages() in an "available_packages" S3
-            ## class whose [.available_packages method calls as.data.frame()
-            ## internally, which triggers a subscript-out-of-bounds bug when
-            ## tools::package_dependencies() subsets db by column name.  Strip
-            ## the extra class so the plain matrix code path is used instead.
-            class(db) <- c("matrix", "array")
             tools::package_dependencies(pkg, db = db, which = deps,
                                         reverse = TRUE)[[pkg]]
           }
