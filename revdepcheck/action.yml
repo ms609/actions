@@ -34,14 +34,15 @@ runs:
     - name: Check reverse dependencies - ${{ inputs.deps }}
       env:
         _R_CHECK_CRAN_INCOMING_REMOTE_: false
+        ## Pass deps via the environment, NOT by interpolating into the R
+        ## source: an empty input must not become a bare `deps <- ` line, which
+        ## would swallow the next statement (deps <- pkg <- read.dcf(...)).
+        INPUT_DEPS: ${{ inputs.deps }}
       run: |
-        deps <- ${{ inputs.deps }}
+        deps_str <- trimws(Sys.getenv("INPUT_DEPS"))
+        deps <- if (nzchar(deps_str)) eval(parse(text = deps_str)) else
+                  c("Depends", "Imports", "Suggests", "LinkingTo")
         pkg <- read.dcf("DESCRIPTION", fields = "Package")[1, 1]
-
-        ## RSPM binary repos omit dependency fields from PACKAGES, breaking
-        ## available.packages()-based revdep lookups.  Force CRAN source repos
-        ## for this script so all metadata fetches include "Depends" etc.
-        options(repos = c(CRAN = "https://cloud.r-project.org"))
 
         ## revdep_check() installs the package's own CRAN release as a baseline
         ## to diff old-vs-new, so it errors for any package not (yet) on CRAN --
