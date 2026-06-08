@@ -138,7 +138,7 @@ runs:
           file.create("docs/.nojekyll")
          
         } else {
-          pkgdown::build_site(install = FALSE, new_process = FALSE)
+          pkgdown::build_site_github_pages(install = FALSE, new_process = FALSE)
         }
         
         if (length(warnings()) > 0) {
