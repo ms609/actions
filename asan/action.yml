@@ -26,6 +26,19 @@ inputs:
     extra-repositories:
       description: Extra CRAN-like repositories for dependency installation.
       required: false
+    exclude-packages:
+      description: >
+        Comma-separated packages to omit when installing the immediate
+        Suggests (and Config/Needs/memcheck).  Their hard dependencies are
+        omitted too, so this is the lever for skipping a heavy *optional*
+        package together with everything it would drag in from source under
+        the sanitiser - e.g. exclude `Rogue` to avoid the ~30-minute source
+        build of its hard dependency `Rfast`.  Name the Suggested package
+        itself, not the transitive dependency (excluding `Rfast` alone would
+        leave `Rogue` unsatisfiable).  The package's own code must guard the
+        excluded package (requireNamespace() / skip_if_not_installed()).
+      required: false
+      default: ''
     submodules:
       description: Whether to checkout submodules. Passed to actions/checkout.
       required: false
@@ -80,16 +93,39 @@ runs:
 
     - name: Install package dependencies
       run: |
-        extra <- if ("${{ inputs.test }}" %in% c("examples", "all")) "devtools" else character()
-        pak::local_install_deps(dependencies = TRUE)
-        if (length(extra)) pak::pak(extra)
-        # Honour DESCRIPTION's Config/Needs/memcheck (e.g. pkgdown for vignettes.R)
+        test <- "${{ inputs.test }}"
+        exclude <- strsplit(gsub("[[:space:]]+", "", "${{ inputs.exclude-packages }}"), ",")[[1]]
+        exclude <- exclude[nzchar(exclude)]
         desc <- read.dcf("DESCRIPTION")
+
+        # Hard dependencies (Depends / Imports / LinkingTo, recursively) are
+        # always required.  Suggests are NOT installed for the tests and
+        # examples legs: they pull optional packages - and the heavy source
+        # builds those drag in (e.g. Rfast, ~30 min under ASAN) - that add no
+        # coverage to TreeSearch's own compiled code.  testthat / pkgdown /
+        # devtools, needed to *run* the legs, come from Config/Needs/memcheck
+        # below, so they install regardless of dependency depth.
+        hard <- c("Depends", "Imports", "LinkingTo")
+        pak::local_install_deps(dependencies = hard)
+
+        # The vignettes leg may exercise optional packages, so install the
+        # package's *immediate* Suggests (their hard deps follow; their own
+        # Suggests do not).  `exclude-packages` drops named Suggests, and with
+        # them the hard dependencies they would otherwise pull from source.
+        if (test %in% c("vignettes", "all") && "Suggests" %in% colnames(desc)) {
+          sugg <- strsplit(gsub("[[:space:]]+", "", desc[, "Suggests"]), ",")[[1]]
+          sugg <- sub("\\(.*", "", sugg)                 # strip version constraints
+          sugg <- setdiff(sugg[nzchar(sugg)], exclude)
+          if (length(sugg)) pak::pkg_install(sugg, dependencies = hard)
+        }
+
+        # Honour DESCRIPTION's Config/Needs/memcheck (testthat for tests.R,
+        # devtools for examples.R, pkgdown for vignettes.R).
         field <- "Config/Needs/memcheck"
         if (field %in% colnames(desc)) {
           pkgs <- strsplit(gsub("[[:space:]]+", "", desc[, field]), ",")[[1]]
-          pkgs <- pkgs[nzchar(pkgs)]
-          if (length(pkgs)) pak::pak(pkgs)
+          pkgs <- setdiff(pkgs[nzchar(pkgs)], exclude)
+          if (length(pkgs)) pak::pkg_install(pkgs, dependencies = hard)
         }
       shell: Rscript {0}
 
