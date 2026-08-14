@@ -20,8 +20,8 @@ runs:
       id: install
       run: |
         echo "::group::Checking for previous installation"
-        PACKAGE_NAME=$(Rscript -e "cat(basename(normalizePath('.')))")                
-        if Rscript -e "if ('$PACKAGE_NAME' %in% rownames(installed.packages())) quit(status = 1)" ; then
+        PACKAGE_NAME=$(Rscript -e "cat(read.dcf(file.path('${{ inputs.path }}', 'DESCRIPTION'))[1, 'Package'])")
+        if Rscript -e "if (!('$PACKAGE_NAME' %in% rownames(installed.packages()))) quit(status = 1)" ; then
           echo "❌ Package '$PACKAGE_NAME' is already installed in default libPaths()"
           echo "Please ensure the environment is clean before benchmarking."
           echo "Installed packages:"
