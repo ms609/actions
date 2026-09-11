@@ -14,3 +14,20 @@ The action is intended to be called from `rhub.yaml`.
 
 # Using this workflow
 
+Create `rhub.yaml` using `rhub::rhub_setup()`.
+
+Insert
+```yml
+      - uses: ms609/actions/rhub-quarto@main
+```
+
+immediately before *each* occurrence of:
+
+```yml
+      - uses: r-hub/actions/run-check@v1
+        with:
+          token: ${{ secrets.RHUB_TOKEN }}
+          job-config: ${{ matrix.config.job-config }}
+```
+
+You'll find one under `linux-container:` and the other under `other-platforms:`.
