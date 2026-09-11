@@ -20,10 +20,6 @@ runs:
             echo "has_quarto=false" >> "$GITHUB_OUTPUT"
           fi
       
-      - shell: bash
-        run: |
-          echo ${{ inputs.linux }}
-      
       - uses: dcarbone/install-jq-action@v4.0.1
         if: |
           inputs.linux == 'true' &&
@@ -67,7 +63,7 @@ runs:
         if: |
           inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
-          ${{ steps.os-check.outputs.is_fedora != 'true' }}
+          steps.os-check.outputs.is_fedora != 'true'
         shell: bash
         run: |
           apt-get update -qq && apt-get install -y -qq wget libc6
@@ -75,7 +71,7 @@ runs:
       - if: |
           inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
-          ${{ steps.os-check.outputs.is_fedora != 'true' }}
+          steps.os-check.outputs.is_fedora != 'true'
         uses: quarto-dev/quarto-actions/setup@v2
 
       # FEDORA
@@ -83,7 +79,7 @@ runs:
         if: |
           inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
-          ${{ steps.os-check.outputs.is_fedora == 'true' }}
+          steps.os-check.outputs.is_fedora == 'true'
         shell: bash
         run: |
           dnf install -y wget glibc glibc-common libstdc++ tar || yum install -y wget glibc libstdc++ tar
@@ -92,7 +88,7 @@ runs:
         if: |
           inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
-          ${{ steps.os-check.outputs.is_fedora == 'true' }}
+          steps.os-check.outputs.is_fedora == 'true'
         shell: bash
         run: |
           QUARTO_URL=$(curl -s https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz")) | .browser_download_url')
