@@ -81,7 +81,7 @@ runs:
       # FEDORA
       - name: Fetch Fedora dependencies needed by Quarto dynamic binary
         if: |
-          ${{ inputs.linux }} == 'true' &&
+          inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
           ${{ steps.os-check.outputs.is_fedora == 'true' }}
         shell: bash
@@ -90,7 +90,7 @@ runs:
 
       - name: Install Quarto CLI via Tarball (Fedora)
         if: |
-          ${{ inputs.linux }} == 'true' &&
+          inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
           ${{ steps.os-check.outputs.is_fedora == 'true' }}
         shell: bash
@@ -108,7 +108,7 @@ runs:
 
       - name: Configure Quarto environment
         if: |
-          ${{ inputs.linux }} == 'true' &&
+          inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true'
         shell: bash
         run: |
@@ -119,7 +119,7 @@ runs:
 
       - uses: quarto-dev/quarto-actions/setup@v2
         if: |
-          ${{ inputs.linux }} == 'false' &&
+          inputs.linux == 'false' &&
           steps.check-vignette.outputs.has_quarto == 'true'
           
       - name: Pre-install package for Quarto vignette subprocess
