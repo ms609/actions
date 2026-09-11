@@ -30,6 +30,7 @@ runs:
         if: |
           ${{ inputs.linux }} == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true'
+        shell: bash
         run: |
           if ! command -v sudo >/dev/null 2>&1; then
             echo '#!/bin/sh' > /usr/local/bin/sudo
@@ -42,6 +43,7 @@ runs:
           ${{ inputs.linux }} == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true'
         id: os-check
+        shell: bash
         run: |
           if [ -f /etc/os-release ]; then
             . /etc/os-release
@@ -63,6 +65,7 @@ runs:
           ${{ inputs.linux }} == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
           ${{ steps.os-check.outputs.is_fedora != 'true' }}
+        shell: bash
         run: |
           apt-get update -qq && apt-get install -y -qq wget libc6
 
@@ -78,6 +81,7 @@ runs:
           ${{ inputs.linux }} == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
           ${{ steps.os-check.outputs.is_fedora == 'true' }}
+        shell: bash
         run: |
           dnf install -y wget glibc glibc-common libstdc++ tar || yum install -y wget glibc libstdc++ tar
 
@@ -86,6 +90,7 @@ runs:
           ${{ inputs.linux }} == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
           ${{ steps.os-check.outputs.is_fedora == 'true' }}
+        shell: bash
         run: |
           QUARTO_URL=$(curl -s https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz")) | .browser_download_url')
 
@@ -102,6 +107,7 @@ runs:
         if: |
           ${{ inputs.linux }} == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true'
+        shell: bash
         run: |
           QUARTO_BIN=$(command -v quarto || echo "/opt/quarto/bin/quarto")
           QUARTO_DIR=$(dirname "$QUARTO_BIN")
@@ -115,5 +121,5 @@ runs:
           
       - name: Pre-install package for Quarto vignette subprocess
         if: steps.check-vignette.outputs.has_quarto == 'true'
-        run: R CMD INSTALL .
         shell: bash
+        run: R CMD INSTALL .
