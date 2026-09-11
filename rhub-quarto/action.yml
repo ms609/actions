@@ -19,17 +19,22 @@ runs:
           else
             echo "has_quarto=false" >> "$GITHUB_OUTPUT"
           fi
+      
+      - shell: bash
+        run: |
+          echo ${{ inputs.linux }}
+      
       - uses: dcarbone/install-jq-action@v4.0.1
         if: |
           ${{ inputs.linux }} == 'true' &&
-          steps.check-vignette.outputs.has_quarto == 'true'
+          ${{ steps.check-vignette.outputs.has_quarto }} == 'true'
           
           
 
       - name: Quarto installation - provide dummy 'sudo'
         if: |
           ${{ inputs.linux }} == 'true' &&
-          steps.check-vignette.outputs.has_quarto == 'true'
+          ${{ steps.check-vignette.outputs.has_quarto }} == 'true'
         shell: bash
         run: |
           if ! command -v sudo >/dev/null 2>&1; then
