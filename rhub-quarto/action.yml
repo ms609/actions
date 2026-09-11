@@ -73,7 +73,7 @@ runs:
           apt-get update -qq && apt-get install -y -qq wget libc6
 
       - if: |
-          ${{ inputs.linux }} == 'true' &&
+          inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
           ${{ steps.os-check.outputs.is_fedora != 'true' }}
         uses: quarto-dev/quarto-actions/setup@v2
