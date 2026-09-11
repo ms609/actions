@@ -91,7 +91,9 @@ runs:
           steps.os-check.outputs.is_fedora == 'true'
         shell: bash
         run: |
-          QUARTO_URL=$(curl -s https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz")) | .browser_download_url')
+          QUARTO_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest | \
+            jq -r '(.assets // [])[] | select(.name | endswith("linux-amd64.tar.gz")) | .browser_download_url')
 
           if [ -z "$QUARTO_URL" ] || [ "$QUARTO_URL" = "null" ]; then
             QUARTO_URL="https://github.com/quarto-dev/quarto-cli/releases/download/v1.5.57/quarto-1.5.57-linux-amd64.tar.gz"
