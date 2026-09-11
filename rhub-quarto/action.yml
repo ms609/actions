@@ -26,15 +26,13 @@ runs:
       
       - uses: dcarbone/install-jq-action@v4.0.1
         if: |
-          ${{ inputs.linux }} == 'true' &&
-          ${{ steps.check-vignette.outputs.has_quarto }} == 'true'
-          
-          
+          inputs.linux == 'true' &&
+          steps.check-vignette.outputs.has_quarto == 'true'
 
       - name: Quarto installation - provide dummy 'sudo'
         if: |
-          ${{ inputs.linux }} == 'true' &&
-          ${{ steps.check-vignette.outputs.has_quarto }} == 'true'
+          inputs.linux == 'true' &&
+          steps.check-vignette.outputs.has_quarto == 'true'
         shell: bash
         run: |
           if ! command -v sudo >/dev/null 2>&1; then
@@ -45,7 +43,7 @@ runs:
 
       - name: Detect OS distribution
         if: |
-          ${{ inputs.linux }} == 'true' &&
+          inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true'
         id: os-check
         shell: bash
@@ -67,7 +65,7 @@ runs:
       # UBUNTU
       - name: Fetch Ubuntu dependencies needed by Quarto dynamic binary
         if: |
-          ${{ inputs.linux }} == 'true' &&
+          inputs.linux == 'true' &&
           steps.check-vignette.outputs.has_quarto == 'true' &&
           ${{ steps.os-check.outputs.is_fedora != 'true' }}
         shell: bash
