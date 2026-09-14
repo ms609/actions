@@ -26,6 +26,14 @@ inputs:
     extra-repositories:
       description: Extra CRAN-like repositories for dependency installation.
       required: false
+    token:
+      description: >
+        GitHub token used to query the Quarto CLI release when the
+        vignettes leg needs Quarto installed. Avoids anonymous API
+        rate-limiting; falls back to a pinned Quarto version if unset
+        or the API call fails.
+      required: false
+      default: ''
     exclude-packages:
       description: >
         Comma-separated packages to omit when installing the immediate
@@ -158,6 +166,61 @@ runs:
         UBSAN_OPTIONS: ${{ inputs.ubsan-options }}
       run: |
         Rscript memcheck/examples.R
+      shell: bash
+
+    - name: Check if VignetteBuilder contains quarto
+      id: check-vignette
+      if: inputs.test == 'vignettes' || inputs.test == 'all'
+      run: |
+        if [ -f DESCRIPTION ] && awk '/^[A-Za-z0-9_.-]+:/ { in_vb = ($0 ~ /^VignetteBuilder:/) } in_vb && /quarto/ { found=1 } END { exit !found }' DESCRIPTION; then
+          echo "has_quarto=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_quarto=false" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
+
+    - uses: dcarbone/install-jq-action@v4.0.1
+      if: |
+        (inputs.test == 'vignettes' || inputs.test == 'all') &&
+        steps.check-vignette.outputs.has_quarto == 'true'
+
+    - name: Install Quarto CLI via tarball
+      # The r-hub gcc-asan container is Fedora-based, so we can't rely on
+      # quarto-dev/quarto-actions/setup@v2 (apt-oriented) or find_quarto()
+      # picking Quarto up from a system package. Mirrors the Fedora branch
+      # of https://github.com/ms609/actions/blob/main/rhub-quarto/action.yml
+      if: |
+        (inputs.test == 'vignettes' || inputs.test == 'all') &&
+        steps.check-vignette.outputs.has_quarto == 'true'
+      run: |
+        if command -v quarto &> /dev/null; then
+          exit 0
+        fi
+
+        dnf install -y wget glibc glibc-common libstdc++ tar || yum install -y wget glibc libstdc++ tar
+
+        QUARTO_URL=$(curl -s -H "Authorization: Bearer ${{ inputs.token }}" \
+          https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest | \
+          jq -r '(.assets // [])[] | select(.name | endswith("linux-amd64.tar.gz")) | .browser_download_url')
+
+        if [ -z "$QUARTO_URL" ] || [ "$QUARTO_URL" = "null" ]; then
+          QUARTO_URL="https://github.com/quarto-dev/quarto-cli/releases/download/v1.5.57/quarto-1.5.57-linux-amd64.tar.gz"
+        fi
+
+        mkdir -p /opt/quarto
+        curl -sL "$QUARTO_URL" | tar -xz -C /opt/quarto --strip-components=1
+        ln -sf /opt/quarto/bin/quarto /usr/local/bin/quarto
+      shell: bash
+
+    - name: Configure Quarto environment
+      if: |
+        (inputs.test == 'vignettes' || inputs.test == 'all') &&
+        steps.check-vignette.outputs.has_quarto == 'true'
+      run: |
+        QUARTO_BIN=$(command -v quarto || echo "/opt/quarto/bin/quarto")
+        QUARTO_DIR=$(dirname "$QUARTO_BIN")
+        echo "QUARTO_PATH=$QUARTO_BIN" >> $GITHUB_ENV
+        echo "QUARTO_BIN_PATH=$QUARTO_DIR" >> $GITHUB_ENV
       shell: bash
 
     - name: ASAN - memcheck vignettes
