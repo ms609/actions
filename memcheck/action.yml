@@ -69,11 +69,8 @@ runs:
         extra-packages: ${{ (inputs.test == 'examples' || inputs.test == 'all') && 'devtools' || '' }}
         needs: memcheck
 
-    # The package goes into a library of its own, not R_LIBS_USER:
-    # setup-r-dependencies saves R_LIBS_USER to its cache at the end of the job,
-    # and other jobs that restore a cache by key prefix (e.g. the benchmark
-    # job, whose benchmark-step refuses a preinstalled package) would inherit
-    # this build. R_LIBS puts the library first on the path for later steps.
+    # Install the package into its own library: setup-r-dependencies saves
+    # R_LIBS_USER to its cache, which other jobs may restore by key prefix.
     - name: Install package
       run: |
         lib="$RUNNER_TEMP/memcheck-lib"
