@@ -69,10 +69,18 @@ runs:
         extra-packages: ${{ (inputs.test == 'examples' || inputs.test == 'all') && 'devtools' || '' }}
         needs: memcheck
 
+    # The package goes into a library of its own, not R_LIBS_USER:
+    # setup-r-dependencies saves R_LIBS_USER to its cache at the end of the job,
+    # and other jobs that restore a cache by key prefix (e.g. the benchmark
+    # job, whose benchmark-step refuses a preinstalled package) would inherit
+    # this build. R_LIBS puts the library first on the path for later steps.
     - name: Install package
       run: |
-        pak::local_install(dependencies = FALSE)
-      shell: Rscript {0}
+        lib="$RUNNER_TEMP/memcheck-lib"
+        mkdir -p "$lib"
+        R CMD INSTALL --preclean --clean --library="$lib" .
+        echo "R_LIBS=$lib" >> "$GITHUB_ENV"
+      shell: bash
 
     - name: Reinstall ASan-linked packages from source
       run: |
@@ -83,7 +91,7 @@ runs:
           if ldd "$so" 2>/dev/null | grep -q libasan; then
             pkg=$(basename "$(dirname "$(dirname "$so")")")
             echo "::warning::$pkg links to libasan — reinstalling from source"
-            Rscript -e "install.packages('$pkg', type='source')"
+            Rscript -e "install.packages('$pkg', lib = '$r_libs', type='source')"
           fi
         done
       shell: bash
