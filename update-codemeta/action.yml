@@ -99,11 +99,23 @@ runs:
         git config --local user.email "${uid}+${APP}[bot]@users.noreply.github.com"
         git add codemeta.json
         git commit -m "Update codemeta.json"
-        if ! git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${BRANCH}"; then
-          echo "::error::codemeta.json is stale and could not be pushed (the branch may have moved). $fix"
-          exit 1
-        fi
-        echo "pushed=true" >> "$GITHUB_OUTPUT"
+        # A freshly minted token can be refused (403) for a few seconds while it
+        # propagates, so retry that; a rejected push (branch moved) is final.
+        for wait in 5 10 20 0; do
+          if out=$(git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${BRANCH}" 2>&1); then
+            echo "$out"
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$out"
+          if [ "$wait" = 0 ] || ! grep -qE "error: 40[13]|denied" <<< "$out"; then
+            break
+          fi
+          echo "Retrying in ${wait} s."
+          sleep "$wait"
+        done
+        echo "::error::codemeta.json is stale and could not be pushed (see above). $fix"
+        exit 1
 
     - name: Report push
       if: steps.push.outputs.pushed == 'true'
