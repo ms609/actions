@@ -63,5 +63,13 @@ jobs:
     # ...
 ```
 
-Fork and Dependabot PRs cannot read the key; if `codemeta.json` is stale
-there, the job fails and shows the diff to commit.
+## Forks
+
+`codemeta.json` is maintained in the home repository only:
+
+- **In a fork** (e.g. an agent's working copy), the job does nothing.
+- **PRs from a fork into the home repository** can't be pushed to: staleness
+  is reported as a warning, not a failure, and the next PR from a branch of
+  the home repository brings the file up to date.
+- **Dependabot PRs** can't read the key: if `codemeta.json` is stale, the job
+  fails and shows the diff to commit.
