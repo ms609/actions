@@ -37,15 +37,29 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+    outputs:
+      pushed: ${{ steps.codemeta.outputs.pushed }}
     steps:
-      - uses: ms609/actions/update-codemeta@main
+      - id: codemeta
+        uses: ms609/actions/update-codemeta@main
         with:
           client-id: ${{ vars.CODEMETA_APP_ID }}
           private-key: ${{ secrets.CODEMETA_APP_KEY }}
 
-  check:
+  # Cheap check: waits the ~15 s for codemeta, then skips if an update was
+  # pushed (the fresh run checks the new head), but still runs if codemeta
+  # failed for another reason, so a build signal is never lost.
+  sense-check:
     needs: codemeta
-    if: ${{ !cancelled() && contains(fromJSON('["success", "skipped"]'), needs.codemeta.result) }}
+    if: ${{ !cancelled() && needs.codemeta.outputs.pushed != 'true' }}
+    # ...
+
+  # Expensive checks: only once codemeta.json is known to be current.
+  full-check:
+    needs: [sense-check, codemeta]
+    if: >-
+      !cancelled() && needs.sense-check.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.codemeta.result)
     # ...
 ```
 

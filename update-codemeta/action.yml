@@ -11,6 +11,12 @@ inputs:
     description: Private key of that App (e.g. secrets.CODEMETA_APP_KEY).
     required: false
     default: ''
+outputs:
+  pushed:
+    description: >
+      'true' if an update was pushed, starting a fresh run; jobs that need not
+      finish on the superseded commit can then skip.
+    value: ${{ steps.push.outputs.pushed }}
 
 runs:
   using: composite
@@ -49,6 +55,7 @@ runs:
         permission-contents: write
 
     - name: Push metadata
+      id: push
       if: steps.build.outputs.stale == 'true'
       shell: bash
       env:
@@ -70,5 +77,11 @@ runs:
           echo "::error::codemeta.json is stale and could not be pushed (the branch may have moved). $fix"
           exit 1
         fi
+        echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+    - name: Report push
+      if: steps.push.outputs.pushed == 'true'
+      shell: bash
+      run: |
         echo "::error::codemeta.json was stale; pushed an update, which starts a fresh run."
         exit 1
