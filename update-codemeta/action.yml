@@ -21,23 +21,49 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Checkout PR branch
-      uses: actions/checkout@v6
-      with:
-        ref: ${{ github.head_ref }}
-        persist-credentials: false  # push with the app token, not GITHUB_TOKEN
-
-    - name: Build metadata
-      id: build
+    # codemeta.json is maintained in the home repository only. In a fork (e.g.
+    # an agent's working copy) the job is a no-op; a PR from a fork into the
+    # home repository can't be pushed to, so staleness there is only reported,
+    # and the next same-repository PR brings the file up to date.
+    - name: Scope
+      id: scope
       shell: bash
+      env:
+        FORK: ${{ github.event.repository.fork }}
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
       run: |
         if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
           echo "::error::update-codemeta runs on pull_request events only."
           exit 1
+        elif [ "$FORK" = true ]; then
+          echo "::notice::$GITHUB_REPOSITORY is a fork; codemeta.json is updated in the home repository."
+        elif [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+          echo "mode=report" >> "$GITHUB_OUTPUT"
+        else
+          echo "mode=update" >> "$GITHUB_OUTPUT"
         fi
+
+    - name: Checkout PR head
+      if: steps.scope.outputs.mode != ''
+      uses: actions/checkout@v6
+      with:
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false  # push with the app token, not GITHUB_TOKEN
+
+    - name: Build metadata
+      id: build
+      if: steps.scope.outputs.mode != ''
+      shell: bash
+      env:
+        MODE: ${{ steps.scope.outputs.mode }}
+      run: |
         python3 "$GITHUB_ACTION_PATH/codemeta.py"
         if git diff --quiet -- codemeta.json; then
           echo "codemeta.json is up to date."
+        elif [ "$MODE" = report ]; then
+          git diff -- codemeta.json
+          echo "::warning::codemeta.json is stale; it will be updated by the next pull request from within $GITHUB_REPOSITORY."
         else
           git diff -- codemeta.json
           echo "stale=true" >> "$GITHUB_OUTPUT"
@@ -65,7 +91,7 @@ runs:
       run: |
         fix="Apply the diff above to codemeta.json (or run python3 codemeta.py from ms609/actions/update-codemeta) and commit it."
         if [ -z "$TOKEN" ]; then
-          echo "::error::codemeta.json is stale and no app key is available (fork or Dependabot PR?). $fix"
+          echo "::error::codemeta.json is stale and no app key is available (Dependabot PR?). $fix"
           exit 1
         fi
         uid=$(curl -fsS -H "Authorization: Bearer $TOKEN" "https://api.github.com/users/${APP}%5Bbot%5D" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
