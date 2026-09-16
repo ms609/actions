@@ -10,6 +10,9 @@ to facilitate some common tasks.
 
 1. [ms609/actions/codemeta.R](https://github.com/ms609/actions/tree/main/codemeta):
   Write package metadata to `codemeta.js`
+  (superseded by `update-codemeta`).
+1. [ms609/actions/update-codemeta](https://github.com/ms609/actions/tree/main/update-codemeta):
+  Keep `codemeta.json` current from pull requests, without pushing to the default branch.
 1. [ms609/actions/pkgdown.R](https://github.com/ms609/actions/tree/main/pkgdown):
   Create package documentation website with [pkgdown](https://pkgdown.r-lib.org/).
   Adapted from [r-lib example](https://github.com/r-lib/actions/tree/v2/examples#build-pkgdown-site).
