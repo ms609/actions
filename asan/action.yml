@@ -80,23 +80,33 @@ runs:
       with:
         submodules: ${{ inputs.submodules }}
 
-    - name: Read Additional_repositories from DESCRIPTION
-      id: desc-repos
-      run: |
-        repos=$(grep "^Additional_repositories:" DESCRIPTION 2>/dev/null \
-          | sed 's/^Additional_repositories:[[:space:]]*//' || true)
-        all_repos=$(printf '%s\n' "$repos" "${{ inputs.extra-repositories }}" \
-          | grep -v '^$' | tr '\n' ',' | sed 's/,$//' || true)
-        echo "repos=$all_repos" >> "$GITHUB_OUTPUT"
-      shell: bash
-
+    # Each `run` step is a fresh R process, so options(repos = ...) set in a
+    # step of its own is gone before pak looks for packages. Record the extra
+    # repositories in the site profile, which every later R process - pak's
+    # install subprocesses included - reads at startup.
     - name: Configure additional repositories
-      if: steps.desc-repos.outputs.repos != ''
+      env:
+        EXTRA_REPOS: ${{ inputs.extra-repositories }}
       run: |
-        repos <- strsplit("${{ steps.desc-repos.outputs.repos }}", ",")[[1]]
-        cur <- getOption("repos")
-        options(repos = c(cur, structure(repos, names = paste0("extra", seq_along(repos)))))
-        cat("Repos:", paste(getOption("repos"), collapse = "\n"), "\n")
+        desc <- read.dcf("DESCRIPTION")
+        field <- "Additional_repositories"
+        repos <- c(if (field %in% colnames(desc)) desc[, field],
+                   Sys.getenv("EXTRA_REPOS"))
+        repos <- unlist(strsplit(repos, "[,[:space:]]+"))
+        repos <- unique(repos[nzchar(repos)])
+        if (length(repos)) {
+          names(repos) <- paste0("extra", seq_along(repos))
+          site <- Sys.getenv("R_PROFILE",
+                             file.path(R.home("etc"), "Rprofile.site"))
+          cat("\n# Added by ms609/actions/asan\n",
+              "options(repos = c(getOption(\"repos\"), ",
+              paste(deparse(repos), collapse = ""), "))\n",
+              sep = "", file = site, append = TRUE)
+        }
+      shell: Rscript {0}
+
+    - name: Report repositories
+      run: print(getOption("repos"))
       shell: Rscript {0}
 
     - name: Install package dependencies
