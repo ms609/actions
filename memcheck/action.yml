@@ -12,6 +12,17 @@ inputs:
       description: Whether to checkout submodules. Passed to actions/checkout.
       required: false
       default: 'false'
+    filter:
+      description: >-
+        Regular expression selecting test files by context name (the file name
+        without `test-` and `.R`), passed to `testthat::test_local(filter =)`.
+        Empty runs every file. Applies to "tests" only.
+      required: false
+      default: ''
+    invert:
+      description: If 'true', run the test files that do NOT match `filter`.
+      required: false
+      default: 'false'
 
 runs:
   using: 'composite'
@@ -104,7 +115,10 @@ runs:
         --gen-suppressions=all \
         --error-exitcode=1" \
         --vanilla \
-        -e "testthat::test_local()"
+        -e "f <- Sys.getenv('MEMCHECK_FILTER'); testthat::test_local(filter = if (nzchar(f)) f, invert = identical(Sys.getenv('MEMCHECK_INVERT'), 'true'))"
+      env:
+        MEMCHECK_FILTER: ${{ inputs.filter }}
+        MEMCHECK_INVERT: ${{ inputs.invert }}
       shell: bash
 
     - name: valgrind - memcheck examples

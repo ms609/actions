@@ -73,6 +73,18 @@ jobs:
 For simplicity, removing the `strategy:` and `with:` blocks will test the three
 aspects of a package in serial.
 
+To run a subset of test files, e.g. a quick pass on pull requests, pass
+`filter` (a regular expression on file names, as in `testthat::test_local()`)
+and optionally `invert: 'true'` to skip the files it matches instead:
+
+```yaml
+      - uses: ms609/actions/memcheck@main
+        with:
+          test: tests
+          filter: '^(slow-file|other-slow-file)$'
+          invert: 'true'
+```
+
 3. Create a directory `memcheck` (and add this to your `.Rbuildignore` file),
    copied from https://github.com/ms609/TreeTools/tree/main/memcheck
    
