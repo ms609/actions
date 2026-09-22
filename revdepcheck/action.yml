@@ -9,6 +9,14 @@ inputs:
       description: Extra packages to install with r-lib/actions/setup-r-dependencies#
       required: false
       default: ""
+    allow-errors:
+      description: >
+        Comma-separated reverse dependencies whose R CMD check errors are
+        tolerated when the same errors occur against the CRAN release (e.g. a
+        revdep that is currently broken on CRAN for reasons of its own).
+        New errors, and checks that fail to complete, still fail the job.
+      required: false
+      default: ""
 
 runs:
   using: 'composite'
@@ -38,6 +46,7 @@ runs:
         ## source: an empty input must not become a bare `deps <- ` line, which
         ## would swallow the next statement (deps <- pkg <- read.dcf(...)).
         INPUT_DEPS: ${{ inputs.deps }}
+        INPUT_ALLOW_ERRORS: ${{ inputs.allow-errors }}
       run: |
         deps_str <- trimws(Sys.getenv("INPUT_DEPS"))
         deps <- if (nzchar(deps_str)) eval(parse(text = deps_str)) else
@@ -67,16 +76,56 @@ runs:
           revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
                                     num_workers = 3,
                                     dependencies = deps)
-          if (file.exists("revdep/problems.md")) {
-            problems <- readLines("revdep/problems.md", warn = FALSE)
-            if (length(problems) > 1) stop(paste0(problems, collapse = "\n"))
+
+          ## problems.md only lists *new* problems, so on its own it passes
+          ## when a check fails to run (failures.md) or when every revdep
+          ## errors identically against both the CRAN and the dev version --
+          ## which is what a broken check environment looks like. Gate on
+          ## the results themselves.
+          allowed <- trimws(strsplit(Sys.getenv("INPUT_ALLOW_ERRORS"), ",")[[1]])
+          bad <- character(0)
+          for (res in revdepcheck::revdep_summary()) {
+            name <- res$package
+            status <- res$status
+            errs <- if (inherits(res$new, "rcmdcheck")) res$new$errors else character(0)
+            if (status == "-") {
+              bad <- c(bad, sprintf("%s: new problems (see problems.md)", name))
+            } else if (status != "+") {
+              bad <- c(bad, sprintf("%s: check did not complete (status '%s'; see failures.md)",
+                                    name, status))
+            } else if (length(errs) && !name %in% allowed) {
+              bad <- c(bad, sprintf("%s: %d error(s) against both CRAN and dev versions",
+                                    name, length(errs)))
+            }
+            if (length(errs)) {
+              cat(sprintf("::group::%s: R CMD check errors (dev version)\n", name))
+              cat(errs, sep = "\n\n")
+              cat("\n::endgroup::\n")
+            }
+          }
+          if (length(bad)) {
+            stop("Reverse dependency check failed:\n  ",
+                 paste(bad, collapse = "\n  "), call. = FALSE)
           }
         }
       shell: Rscript {0}
 
+    - name: Name results artifact
+      id: artifact
+      if: always()
+      env:
+        INPUT_DEPS: ${{ inputs.deps }}
+      run: |
+        # One artifact per matrix leg: upload-artifact refuses duplicate names.
+        slug=$(printf '%s' "$INPUT_DEPS" | tr -c 'A-Za-z0-9' '-' | tr -s '-' | sed 's/^-//;s/-$//')
+        echo "name=revdep-results${slug:+-$slug}" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    # Always upload: a green job can still hide errors worth reading.
     - name: Upload check results
-      if: failure()
+      if: always()
       uses: actions/upload-artifact@main
       with:
-        name: revdep-results
+        name: ${{ steps.artifact.outputs.name }}
         path: revdep/*.md
+        if-no-files-found: ignore

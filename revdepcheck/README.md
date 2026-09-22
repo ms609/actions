@@ -100,3 +100,27 @@ instead:
  of your package's `DESCRIPTION` file reading
 
 `Config/Needs/revdeps: package1, package2`
+
+# What fails the job
+
+The job fails if a reverse dependency:
+
+- has new errors, warnings or notes against the development version
+  (`revdep/problems.md`);
+- could not be checked, e.g. it or the CRAN release failed to install or
+  timed out (`revdep/failures.md`); or
+- has `R CMD check` errors against both the CRAN and the development version.
+  These aren't new, but they usually mean the check environment is broken,
+  and an erroring check can't detect new breakage.
+
+The error text is printed in the job log, and `revdep/*.md` is always
+uploaded as an artifact.
+
+If a reverse dependency is currently broken on CRAN for reasons of its own,
+tolerate its existing errors with:
+
+```yml
+    - uses: ms609/actions/revdepcheck@main
+      with:
+        allow-errors: BrokenPkg, OtherPkg
+```
