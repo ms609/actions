@@ -73,6 +73,23 @@ runs:
           message("No reverse dependencies (", paste(deps, collapse = ", "),
                   ") for '", pkg, "'; nothing to check.")
         } else {
+          ## setup-r points CRAN at Posit Package Manager's Linux *binary*
+          ## repo. revdepcheck downloads the revdeps it checks from the same
+          ## repos it installs their dependencies from, so it fetches
+          ## binaries and every check stops at "Only *source* packages can
+          ## be checked" -- identically for both versions, so no revdep
+          ## looks broken (r-lib/revdepcheck#407). Keep binary installs,
+          ## but download from the same P3M snapshot's source URL.
+          ns <- asNamespace("revdepcheck")
+          download_opts <- get("download_opts", ns)
+          patched <- function(...) {
+            opts <- download_opts(...)
+            stopifnot(!is.null(opts$args$repos))
+            opts$args$repos <- sub("/__linux__/[^/]+/", "/", opts$args$repos)
+            opts
+          }
+          utils::assignInNamespace("download_opts", patched, "revdepcheck")
+
           revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
                                     num_workers = 3,
                                     dependencies = deps)
