@@ -42,6 +42,10 @@ runs:
     - name: Check reverse dependencies - ${{ inputs.deps }}
       env:
         _R_CHECK_CRAN_INCOMING_REMOTE_: false
+        ## setup-r exports NOT_CRAN=true, which revdep checks inherit. Check
+        ## revdeps as CRAN will, so that tests they skip on CRAN (vdiffr
+        ## snapshots, slow tests) don't report failures CRAN would never see.
+        NOT_CRAN: false
         ## Pass deps via the environment, NOT by interpolating into the R
         ## source: an empty input must not become a bare `deps <- ` line, which
         ## would swallow the next statement (deps <- pkg <- read.dcf(...)).
