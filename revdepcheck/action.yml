@@ -150,6 +150,13 @@ runs:
               cat("\n::endgroup::\n")
             }
           }
+          ## An incomplete check's install or timeout error is only in
+          ## failures.md; print it so the log says why without the artifact.
+          if (any(grepl("did not complete", bad)) && file.exists("revdep/failures.md")) {
+            cat("::group::revdep/failures.md\n")
+            writeLines(readLines("revdep/failures.md", warn = FALSE))
+            cat("::endgroup::\n")
+          }
           if (length(bad)) {
             stop("Reverse dependency check failed:\n  ",
                  paste(bad, collapse = "\n  "), call. = FALSE)
