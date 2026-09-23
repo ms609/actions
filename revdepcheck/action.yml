@@ -86,7 +86,10 @@ runs:
             ## List the packages ourselves rather than letting pak solve the
             ## graph: one unresolvable Suggests (e.g. a package off CRAN)
             ## would sink the whole solve.
-            cran <- suppressWarnings(available.packages())
+            ## Read source indexes (P3M binary indexes can omit dependency
+            ## fields), and include Bioconductor, where some revdeps live.
+            repos <- sub("/__linux__/[^/]+/", "/", pak::repo_get()$url)
+            cran <- suppressWarnings(available.packages(repos = repos))
             needed <- unique(c(revdeps, unlist(tools::package_dependencies(
               revdeps, db = cran, which = "all"))))
             needed <- unique(c(needed, unlist(tools::package_dependencies(
