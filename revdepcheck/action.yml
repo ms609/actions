@@ -77,6 +77,23 @@ runs:
           message("No reverse dependencies (", paste(deps, collapse = ", "),
                   ") for '", pkg, "'; nothing to check.")
         } else {
+          ## Binaries from P3M still need their system libraries at run time
+          ## (e.g. magick -> libMagick++), and source installs need headers.
+          ## Runner images don't promise these, so install whatever the
+          ## revdeps and their dependencies declare. A failure here is left
+          ## for the checks to surface.
+          if (Sys.info()[["sysname"]] == "Linux") tryCatch({
+            sysreqs <- pak::pkg_sysreqs(revdeps, dependencies = TRUE)
+            sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
+            for (cmd in c(sysreqs$pre_install, sysreqs$install_scripts,
+                          sysreqs$post_install)) {
+              if (!nzchar(cmd)) next
+              message("+ ", cmd)
+              if (system(paste0(sudo, cmd)) != 0) warning("Failed: ", cmd)
+            }
+          }, error = function(e) warning("System requirements not installed: ",
+                                         conditionMessage(e)))
+
           ## setup-r points CRAN at Posit Package Manager's Linux *binary*
           ## repo. revdepcheck downloads the revdeps it checks from the same
           ## repos it installs their dependencies from, so it fetches
