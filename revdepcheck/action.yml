@@ -11,10 +11,11 @@ inputs:
       default: ""
     allow-errors:
       description: >
-        Comma-separated reverse dependencies whose R CMD check errors are
-        tolerated when the same errors occur against the CRAN release (e.g. a
-        revdep that is currently broken on CRAN for reasons of its own).
-        New errors, and checks that fail to complete, still fail the job.
+        Comma-separated reverse dependencies whose missing-dependency or
+        missing-library errors are tolerated when they also occur against the
+        CRAN release (e.g. a Suggests that cannot be installed on Linux).
+        Other errors shared by both versions never fail the job; new errors,
+        and checks that fail to complete, always do.
       required: false
       default: ""
 
@@ -154,22 +155,55 @@ runs:
           }
           RunChecks()
 
-          ## Re-check, once, any revdep whose check could not start -- e.g.
-          ## a dependency download that P3M answered with HTTP 500.
-          stored <- revdepcheck:::db_get_results(".", NULL)
-          retry <- unique(c(stored$old$package[stored$old$status == "PREPERROR"],
-                            stored$new$package[stored$new$status == "PREPERROR"]))
+          ## Errors that mean the check never exercised the revdep: a
+          ## dependency or system library missing from this runner. These
+          ## would repeat against both versions and hide any regression.
+          envPattern <- paste(c(
+            "there is no package called",
+            "[Pp]ackages? required but not available",
+            "unable to load shared object",
+            "cannot open shared object file",
+            "Only \\*source\\* packages can be checked",
+            "can be installed \\.\\.\\. ERROR"
+          ), collapse = "|")
+          EnvErrors <- function(res) {
+            errs <- if (inherits(res$new, "rcmdcheck")) res$new$errors
+            errs[grepl(envPattern, errs)]
+          }
+
+          ## Re-check, once, any revdep whose check could not start (e.g. a
+          ## dependency download that P3M answered with HTTP 500) or hit
+          ## a missing library -- after installing the system requirements
+          ## of everything revdepcheck installed, which can include packages
+          ## the solve above did not foresee.
+          ## (Timeouts, status "t...", are not retried.)
+          retry <- names(Filter(function(res) {
+            incomplete <- !res$status %in% c("+", "-") &&
+              !startsWith(res$status, "t")
+            incomplete || length(EnvErrors(res)) > 0
+          }, revdepcheck::revdep_summary()))
           if (length(retry)) {
+            if (Sys.info()[["sysname"]] == "Linux") {
+              libs <- unique(dirname(dirname(list.files(
+                "revdep/library", pattern = "^DESCRIPTION$", recursive = TRUE,
+                full.names = TRUE))))
+              for (lib in libs) tryCatch(
+                pak::sysreqs_fix_installed(library = lib),
+                error = function(e) warning("System requirements of ", lib,
+                                            " not installed: ",
+                                            conditionMessage(e)))
+            }
             message("Retrying: ", paste(retry, collapse = ", "))
             revdepcheck::revdep_add(".", retry)
             RunChecks()
           }
 
           ## problems.md only lists *new* problems, so on its own it passes
-          ## when a check fails to run (failures.md) or when every revdep
-          ## errors identically against both the CRAN and the dev version --
-          ## which is what a broken check environment looks like. Gate on
-          ## the results themselves.
+          ## when a check fails to run (failures.md) or when a missing
+          ## dependency stops every revdep identically against both the CRAN
+          ## and the dev version -- which is what a broken check environment
+          ## looks like. Gate on the results themselves. Other errors that
+          ## both versions share are the revdep's own, and only annotated.
           allowed <- trimws(strsplit(Sys.getenv("INPUT_ALLOW_ERRORS"), ",")[[1]])
           bad <- character(0)
           for (res in revdepcheck::revdep_summary()) {
@@ -181,9 +215,12 @@ runs:
             } else if (status != "+") {
               bad <- c(bad, sprintf("%s: check did not complete (status '%s'; see failures.md)",
                                     name, status))
-            } else if (length(errs) && !name %in% allowed) {
-              bad <- c(bad, sprintf("%s: %d error(s) against both CRAN and dev versions",
-                                    name, length(errs)))
+            } else if (length(EnvErrors(res)) && !name %in% allowed) {
+              bad <- c(bad, sprintf("%s: missing dependency or system library (in both versions)",
+                                    name))
+            } else if (length(errs)) {
+              cat(sprintf("::warning::%s: %d error(s) also occur against the CRAN release\n",
+                          name, length(errs)))
             }
             if (length(errs)) {
               cat(sprintf("::group::%s: R CMD check errors (dev version)\n", name))
