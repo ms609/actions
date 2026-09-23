@@ -101,6 +101,10 @@ runs:
             message("Looking up system requirements of ", length(needed),
                     " packages")
             sysreqs <- pak::pkg_sysreqs(needed, dependencies = FALSE)
+            ## TEMP diagnostics
+            message("magick in list: ", "magick" %in% needed)
+            try(print(sysreqs$packages[, intersect(c("sysreq", "packages"),
+                                                   names(sysreqs$packages))]))
             sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
             for (cmd in c(sysreqs$pre_install, sysreqs$install_scripts,
                           sysreqs$post_install)) {
@@ -166,18 +170,14 @@ runs:
             cat("::endgroup::\n")
             for (item in grep("did not complete", bad, value = TRUE)) {
               name <- sub(":.*", "", item)
-              cat(sprintf("::group::%s: check directory\n", name))
-              files <- list.files(file.path("revdep/checks", name),
-                                  recursive = TRUE, all.files = TRUE)
-              writeLines(grep("\\.Rcheck/00_pkg_src", files, invert = TRUE,
-                              value = TRUE))
-              for (f in list.files(file.path("revdep/checks", name, "old"),
-                                   pattern = "\\.(log|out|txt)$", full.names = TRUE,
-                                   recursive = TRUE)) {
-                cat("--", f, "\n")
-                writeLines(tail(readLines(f, warn = FALSE), 30))
+              rows <- revdepcheck:::db_get_results(".", name)
+              for (which in c("old", "new")) {
+                row <- rows[[which]]
+                cat(sprintf("::group::%s (%s): stored status %s\n", name, which,
+                            if (nrow(row)) row$status else "none"))
+                if (nrow(row)) cat(substr(row$result, 1, 3000), "\n")
+                cat("::endgroup::\n")
               }
-              cat("::endgroup::\n")
             }
           }
           if (length(bad)) {
