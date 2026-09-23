@@ -178,6 +178,20 @@
    ...
 }
 
+# FcFontSetList from pango's font enumeration: fontconfig caches the listed
+# patterns for the process lifetime. Shows as definite with fontconfig 2.16+
+# (Ubuntu 26.04).
+{
+   fontconfig_FcFontSetList
+   Memcheck:Leak
+   match-leak-kinds: definite,indirect,possible
+   fun:malloc
+   ...
+   fun:FcFontSetList
+   obj:*/libpangoft2-1.0.so*
+   ...
+}
+
 # fontconfig parsing fonts.conf / conf.d XML files via expat on first use.
 # These show as definite because the root pointer is held in an expat struct
 # that is freed after the parse, leaving the allocated strings unreachable.
