@@ -83,32 +83,37 @@ runs:
           ## revdeps and their dependencies declare. A failure here is left
           ## for the checks to surface.
           if (Sys.info()[["sysname"]] == "Linux") tryCatch({
-            ## List the packages ourselves rather than letting pak solve the
-            ## graph: one unresolvable Suggests (e.g. a package off CRAN)
-            ## would sink the whole solve.
-            ## Read source indexes (P3M binary indexes can omit dependency
-            ## fields), and include Bioconductor, where some revdeps live.
+            ## Let pak solve each revdep's full dependency tree, as
+            ## revdepcheck will install it. A solve fails outright if any
+            ## Suggests is unavailable (e.g. a package off CRAN), so then
+            ## list that revdep's dependencies from the repository indexes
+            ## instead. Read source indexes (P3M binary indexes can omit
+            ## dependency fields), including Bioconductor's.
             repos <- sub("/__linux__/[^/]+/", "/", pak::repo_get()$url)
-            cran <- suppressWarnings(available.packages(repos = repos))
-            needed <- unique(c(revdeps, unlist(tools::package_dependencies(
-              revdeps, db = cran, which = "all"))))
-            needed <- unique(c(needed, unlist(tools::package_dependencies(
-              needed, db = cran, recursive = TRUE))))
-            unindexed <- setdiff(revdeps, rownames(cran))
-            if (length(unindexed)) message("Not in any repository index: ",
-                                           paste(unindexed, collapse = ", "))
-            needed <- intersect(needed, rownames(cran))
-            message("Looking up system requirements of ", length(needed),
-                    " packages")
-            sysreqs <- pak::pkg_sysreqs(needed, dependencies = FALSE)
-            ## TEMP diagnostics
-            message("magick in list: ", "magick" %in% needed)
-            try(print(sysreqs$packages[, intersect(c("sysreq", "packages"),
-                                                   names(sysreqs$packages))]))
+            db <- suppressWarnings(available.packages(repos = repos))
+            ListDeps <- function(pkgs) {
+              direct <- unlist(tools::package_dependencies(pkgs, db = db,
+                                                           which = "all"))
+              needed <- unique(c(pkgs, direct))
+              needed <- unique(c(needed, unlist(tools::package_dependencies(
+                needed, db = db, recursive = TRUE))))
+              intersect(needed, rownames(db))
+            }
+            SysreqsOf <- function(pkg) tryCatch(
+              pak::pkg_sysreqs(pkg, dependencies = TRUE),
+              error = function(e) {
+                message("Listing dependencies of ", pkg, " (",
+                        conditionMessage(e), ")")
+                pak::pkg_sysreqs(ListDeps(pkg), dependencies = FALSE)
+              })
+            cmds <- character(0)
+            for (revdep in revdeps) {
+              sysreqs <- SysreqsOf(revdep)
+              cmds <- c(cmds, sysreqs$pre_install, sysreqs$install_scripts,
+                        sysreqs$post_install)
+            }
             sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
-            for (cmd in c(sysreqs$pre_install, sysreqs$install_scripts,
-                          sysreqs$post_install)) {
-              if (!nzchar(cmd)) next
+            for (cmd in unique(cmds[nzchar(cmds)])) {
               message("+ ", cmd)
               if (system(paste0(sudo, cmd)) != 0) warning("Failed: ", cmd)
             }
@@ -132,9 +137,33 @@ runs:
           }
           utils::assignInNamespace("download_opts", patched, "revdepcheck")
 
-          revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
-                                    num_workers = 3,
-                                    dependencies = deps)
+          ## revdepcheck parses a check once its output closes, which can be
+          ## a moment before the process exits; parsing then fails ("Process
+          ## still alive") and a passing check is reported as incomplete.
+          ## Wait for the exit first.
+          checkDone <- get("check_done", ns)
+          utils::assignInNamespace("check_done", function(state, worker) {
+            worker$process$wait(timeout = 60000)
+            checkDone(state, worker)
+          }, "revdepcheck")
+
+          RunChecks <- function() {
+            revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
+                                      num_workers = 3,
+                                      dependencies = deps)
+          }
+          RunChecks()
+
+          ## Re-check, once, any revdep whose check could not start -- e.g.
+          ## a dependency download that P3M answered with HTTP 500.
+          stored <- revdepcheck:::db_get_results(".", NULL)
+          retry <- unique(c(stored$old$package[stored$old$status == "PREPERROR"],
+                            stored$new$package[stored$new$status == "PREPERROR"]))
+          if (length(retry)) {
+            message("Retrying: ", paste(retry, collapse = ", "))
+            revdepcheck::revdep_add(".", retry)
+            RunChecks()
+          }
 
           ## problems.md only lists *new* problems, so on its own it passes
           ## when a check fails to run (failures.md) or when every revdep
@@ -168,6 +197,7 @@ runs:
             cat("::group::revdep/failures.md\n")
             writeLines(readLines("revdep/failures.md", warn = FALSE))
             cat("::endgroup::\n")
+            ## failures.md omits why a check result could not be read.
             for (item in grep("did not complete", bad, value = TRUE)) {
               name <- sub(":.*", "", item)
               rows <- revdepcheck:::db_get_results(".", name)
