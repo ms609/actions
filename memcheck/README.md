@@ -46,7 +46,7 @@ name: mem-check
 
 jobs:
   mem-check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     name: valgrind ${{ matrix.config.test }}, ubuntu, R release
 
@@ -61,7 +61,6 @@ jobs:
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       _R_CHECK_FORCE_SUGGESTS_: false
-      RSPM: https://packagemanager.posit.co/cran/__linux__/noble/latest
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
