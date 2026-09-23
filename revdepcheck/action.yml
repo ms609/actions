@@ -83,7 +83,16 @@ runs:
           ## revdeps and their dependencies declare. A failure here is left
           ## for the checks to surface.
           if (Sys.info()[["sysname"]] == "Linux") tryCatch({
-            sysreqs <- pak::pkg_sysreqs(revdeps, dependencies = TRUE)
+            ## List the packages ourselves rather than letting pak solve the
+            ## graph: one unresolvable Suggests (e.g. a package off CRAN)
+            ## would sink the whole solve.
+            cran <- suppressWarnings(available.packages())
+            needed <- unique(c(revdeps, unlist(tools::package_dependencies(
+              revdeps, db = cran, which = "all"))))
+            needed <- unique(c(needed, unlist(tools::package_dependencies(
+              needed, db = cran, recursive = TRUE))))
+            needed <- intersect(needed, rownames(cran))
+            sysreqs <- pak::pkg_sysreqs(needed, dependencies = FALSE)
             sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
             for (cmd in c(sysreqs$pre_install, sysreqs$install_scripts,
                           sysreqs$post_install)) {
