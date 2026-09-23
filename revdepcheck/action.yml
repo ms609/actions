@@ -94,7 +94,12 @@ runs:
               revdeps, db = cran, which = "all"))))
             needed <- unique(c(needed, unlist(tools::package_dependencies(
               needed, db = cran, recursive = TRUE))))
+            unindexed <- setdiff(revdeps, rownames(cran))
+            if (length(unindexed)) message("Not in any repository index: ",
+                                           paste(unindexed, collapse = ", "))
             needed <- intersect(needed, rownames(cran))
+            message("Looking up system requirements of ", length(needed),
+                    " packages")
             sysreqs <- pak::pkg_sysreqs(needed, dependencies = FALSE)
             sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
             for (cmd in c(sysreqs$pre_install, sysreqs$install_scripts,
@@ -159,6 +164,21 @@ runs:
             cat("::group::revdep/failures.md\n")
             writeLines(readLines("revdep/failures.md", warn = FALSE))
             cat("::endgroup::\n")
+            for (item in grep("did not complete", bad, value = TRUE)) {
+              name <- sub(":.*", "", item)
+              cat(sprintf("::group::%s: check directory\n", name))
+              files <- list.files(file.path("revdep/checks", name),
+                                  recursive = TRUE, all.files = TRUE)
+              writeLines(grep("\\.Rcheck/00_pkg_src", files, invert = TRUE,
+                              value = TRUE))
+              for (f in list.files(file.path("revdep/checks", name, "old"),
+                                   pattern = "\\.(log|out|txt)$", full.names = TRUE,
+                                   recursive = TRUE)) {
+                cat("--", f, "\n")
+                writeLines(tail(readLines(f, warn = FALSE), 30))
+              }
+              cat("::endgroup::\n")
+            }
           }
           if (length(bad)) {
             stop("Reverse dependency check failed:\n  ",
