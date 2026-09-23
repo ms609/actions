@@ -192,6 +192,31 @@ runs:
                 error = function(e) warning("System requirements of ", lib,
                                             " not installed: ",
                                             conditionMessage(e)))
+
+              ## pak's rules can lag a new Ubuntu release (e.g. ImageMagick
+              ## on 26.04), so also install whichever apt package provides
+              ## each shared library that a check could not load.
+              errs <- unlist(lapply(revdepcheck::revdep_summary()[retry],
+                                    EnvErrors))
+              sharedLibs <- unique(unlist(regmatches(errs, gregexpr(
+                "[^ /:'\u2018\u2019]+\\.so[.0-9]*(?=: cannot open shared object file)",
+                errs, perl = TRUE))))
+              if (length(sharedLibs)) tryCatch({
+                sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
+                system(paste0(sudo, "apt-get -y install apt-file"))
+                system(paste0(sudo, "apt-file update"))
+                for (sharedLib in sharedLibs) {
+                  provider <- system2("apt-file", c("search", "-l",
+                                                    shQuote(paste0("/", sharedLib))),
+                                      stdout = TRUE)
+                  message(sharedLib, " is provided by: ",
+                          paste(provider, collapse = ", "))
+                  if (length(provider)) {
+                    system(paste0(sudo, "apt-get -y install ", provider[1]))
+                  }
+                }
+              }, error = function(e) warning("Shared libraries not installed: ",
+                                             conditionMessage(e)))
             }
             message("Retrying: ", paste(retry, collapse = ", "))
             revdepcheck::revdep_add(".", retry)
