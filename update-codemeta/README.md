@@ -33,7 +33,7 @@ gh secret set CODEMETA_APP_KEY -R owner/repo < app.private-key.pem
 jobs:
   codemeta:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-slim  # seconds of stdlib Python; the cheapest runner suffices
     timeout-minutes: 5
     permissions:
       contents: read
