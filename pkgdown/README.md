@@ -48,6 +48,12 @@ jobs:
       - uses: ms609/actions/pkgdown@main
 ```
 
+`runs-on: ubuntu-slim` (one core, 15-minute cap) suits a light site: on
+runners without R, the action installs it with [rig](https://github.com/r-lib/rig)
+rather than setup-r, skipping ~3 min of R CMD check tooling. Keep a full runner
+where dependencies compile from source (e.g. dev packages from a drat) or
+vignettes compute heavily: slim cancels jobs at the cap.
+
 Optionally add the commands `with: user-email`, `user-name` to attribute the
 resulting commit to a GitHub user.
 
