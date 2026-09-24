@@ -78,8 +78,27 @@ runs:
           echo '__EOF__'
         } >> "$GITHUB_OUTPUT"
 
+    # ubuntu-slim has no R. setup-r would install it, but only after apt-getting
+    # ~3 min of R CMD check tooling (devscripts, ghostscript, qpdf) that pkgdown
+    # never uses; rig installs R alone. Runners that ship R (and rsync, needed
+    # to deploy) leave this step a no-op.
+    - name: Install R (runners without it)
+      id: rig
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        if ! command -v R >/dev/null; then
+          curl -Ls https://github.com/r-lib/rig/releases/download/latest/rig-linux-$(arch)-latest.tar.gz | sudo tar xz -C /usr/local
+          sudo rig add release
+          echo "installed=true" >> "$GITHUB_OUTPUT"
+        fi
+        if ! command -v rsync >/dev/null; then
+          sudo apt-get update -qq && sudo apt-get install -y rsync
+        fi
+
     - uses: r-lib/actions/setup-r@v2
       with:
+        install-r: ${{ steps.rig.outputs.installed != 'true' }}
         use-public-rspm: true
         extra-repositories: ${{ steps.extra-repos.outputs.repositories }}
 
