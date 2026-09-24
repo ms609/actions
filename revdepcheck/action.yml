@@ -11,10 +11,11 @@ inputs:
       default: ""
     allow-errors:
       description: >
-        Comma-separated reverse dependencies whose R CMD check errors are
-        tolerated when the same errors occur against the CRAN release (e.g. a
-        revdep that is currently broken on CRAN for reasons of its own).
-        New errors, and checks that fail to complete, still fail the job.
+        Comma-separated reverse dependencies whose missing-dependency or
+        missing-library errors are tolerated when they also occur against the
+        CRAN release (e.g. a Suggests that cannot be installed on Linux).
+        Other errors shared by both versions never fail the job; new errors,
+        and checks that fail to complete, always do.
       required: false
       default: ""
 
@@ -77,6 +78,49 @@ runs:
           message("No reverse dependencies (", paste(deps, collapse = ", "),
                   ") for '", pkg, "'; nothing to check.")
         } else {
+          ## Binaries from P3M still need their system libraries at run time
+          ## (e.g. magick -> libMagick++), and source installs need headers.
+          ## Runner images don't promise these, so install whatever the
+          ## revdeps and their dependencies declare. A failure here is left
+          ## for the checks to surface.
+          if (Sys.info()[["sysname"]] == "Linux") tryCatch({
+            ## Let pak solve each revdep's full dependency tree, as
+            ## revdepcheck will install it. A solve fails outright if any
+            ## Suggests is unavailable (e.g. a package off CRAN), so then
+            ## list that revdep's dependencies from the repository indexes
+            ## instead. Read source indexes (P3M binary indexes can omit
+            ## dependency fields), including Bioconductor's.
+            repos <- sub("/__linux__/[^/]+/", "/", pak::repo_get()$url)
+            db <- suppressWarnings(available.packages(repos = repos))
+            ListDeps <- function(pkgs) {
+              direct <- unlist(tools::package_dependencies(pkgs, db = db,
+                                                           which = "all"))
+              needed <- unique(c(pkgs, direct))
+              needed <- unique(c(needed, unlist(tools::package_dependencies(
+                needed, db = db, recursive = TRUE))))
+              intersect(needed, rownames(db))
+            }
+            SysreqsOf <- function(pkg) tryCatch(
+              pak::pkg_sysreqs(pkg, dependencies = TRUE),
+              error = function(e) {
+                message("Listing dependencies of ", pkg, " (",
+                        conditionMessage(e), ")")
+                pak::pkg_sysreqs(ListDeps(pkg), dependencies = FALSE)
+              })
+            cmds <- character(0)
+            for (revdep in revdeps) {
+              sysreqs <- SysreqsOf(revdep)
+              cmds <- c(cmds, sysreqs$pre_install, sysreqs$install_scripts,
+                        sysreqs$post_install)
+            }
+            sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
+            for (cmd in unique(cmds[nzchar(cmds)])) {
+              message("+ ", cmd)
+              if (system(paste0(sudo, cmd)) != 0) warning("Failed: ", cmd)
+            }
+          }, error = function(e) warning("System requirements not installed: ",
+                                         conditionMessage(e)))
+
           ## setup-r points CRAN at Posit Package Manager's Linux *binary*
           ## repo. revdepcheck downloads the revdeps it checks from the same
           ## repos it installs their dependencies from, so it fetches
@@ -94,15 +138,97 @@ runs:
           }
           utils::assignInNamespace("download_opts", patched, "revdepcheck")
 
-          revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
-                                    num_workers = 3,
-                                    dependencies = deps)
+          ## revdepcheck parses a check once its output closes, which can be
+          ## a moment before the process exits; parsing then fails ("Process
+          ## still alive") and a passing check is reported as incomplete.
+          ## Wait for the exit first.
+          checkDone <- get("check_done", ns)
+          utils::assignInNamespace("check_done", function(state, worker) {
+            worker$process$wait(timeout = 60000)
+            checkDone(state, worker)
+          }, "revdepcheck")
+
+          RunChecks <- function() {
+            revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
+                                      num_workers = 3,
+                                      dependencies = deps)
+          }
+          RunChecks()
+
+          ## Errors that mean the check never exercised the revdep: a
+          ## dependency or system library missing from this runner. These
+          ## would repeat against both versions and hide any regression.
+          envPattern <- paste(c(
+            "there is no package called",
+            "[Pp]ackages? required but not available",
+            "unable to load shared object",
+            "cannot open shared object file",
+            "Only \\*source\\* packages can be checked",
+            "can be installed \\.\\.\\. ERROR"
+          ), collapse = "|")
+          EnvErrors <- function(res) {
+            errs <- if (inherits(res$new, "rcmdcheck")) res$new$errors
+            errs[grepl(envPattern, errs)]
+          }
+
+          ## Re-check, once, any revdep whose check could not start (e.g. a
+          ## dependency download that P3M answered with HTTP 500) or hit
+          ## a missing library -- after installing the system requirements
+          ## of everything revdepcheck installed, which can include packages
+          ## the solve above did not foresee.
+          ## (Timeouts, status "t...", are not retried.)
+          retry <- names(Filter(function(res) {
+            incomplete <- !res$status %in% c("+", "-") &&
+              !startsWith(res$status, "t")
+            incomplete || length(EnvErrors(res)) > 0
+          }, revdepcheck::revdep_summary()))
+          if (length(retry)) {
+            if (Sys.info()[["sysname"]] == "Linux") {
+              libs <- unique(dirname(dirname(list.files(
+                "revdep/library", pattern = "^DESCRIPTION$", recursive = TRUE,
+                full.names = TRUE))))
+              for (lib in libs) tryCatch(
+                pak::sysreqs_fix_installed(library = lib),
+                error = function(e) warning("System requirements of ", lib,
+                                            " not installed: ",
+                                            conditionMessage(e)))
+
+              ## pak's rules can lag a new Ubuntu release (e.g. ImageMagick
+              ## on 26.04), so also install whichever apt package provides
+              ## each shared library that a check could not load.
+              errs <- unlist(lapply(revdepcheck::revdep_summary()[retry],
+                                    EnvErrors))
+              sharedLibs <- unique(unlist(regmatches(errs, gregexpr(
+                "[^ /:'\u2018\u2019]+\\.so[.0-9]*(?=: cannot open shared object file)",
+                errs, perl = TRUE))))
+              if (length(sharedLibs)) tryCatch({
+                sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
+                system(paste0(sudo, "apt-get -y install apt-file"))
+                system(paste0(sudo, "apt-file update"))
+                for (sharedLib in sharedLibs) {
+                  provider <- system2("apt-file", c("search", "-l",
+                                                    shQuote(paste0("/", sharedLib))),
+                                      stdout = TRUE)
+                  message(sharedLib, " is provided by: ",
+                          paste(provider, collapse = ", "))
+                  if (length(provider)) {
+                    system(paste0(sudo, "apt-get -y install ", provider[1]))
+                  }
+                }
+              }, error = function(e) warning("Shared libraries not installed: ",
+                                             conditionMessage(e)))
+            }
+            message("Retrying: ", paste(retry, collapse = ", "))
+            revdepcheck::revdep_add(".", retry)
+            RunChecks()
+          }
 
           ## problems.md only lists *new* problems, so on its own it passes
-          ## when a check fails to run (failures.md) or when every revdep
-          ## errors identically against both the CRAN and the dev version --
-          ## which is what a broken check environment looks like. Gate on
-          ## the results themselves.
+          ## when a check fails to run (failures.md) or when a missing
+          ## dependency stops every revdep identically against both the CRAN
+          ## and the dev version -- which is what a broken check environment
+          ## looks like. Gate on the results themselves. Other errors that
+          ## both versions share are the revdep's own, and only annotated.
           allowed <- trimws(strsplit(Sys.getenv("INPUT_ALLOW_ERRORS"), ",")[[1]])
           bad <- character(0)
           for (res in revdepcheck::revdep_summary()) {
@@ -114,14 +240,36 @@ runs:
             } else if (status != "+") {
               bad <- c(bad, sprintf("%s: check did not complete (status '%s'; see failures.md)",
                                     name, status))
-            } else if (length(errs) && !name %in% allowed) {
-              bad <- c(bad, sprintf("%s: %d error(s) against both CRAN and dev versions",
-                                    name, length(errs)))
+            } else if (length(EnvErrors(res)) && !name %in% allowed) {
+              bad <- c(bad, sprintf("%s: missing dependency or system library (in both versions)",
+                                    name))
+            } else if (length(errs)) {
+              cat(sprintf("::warning::%s: %d error(s) also occur against the CRAN release\n",
+                          name, length(errs)))
             }
             if (length(errs)) {
               cat(sprintf("::group::%s: R CMD check errors (dev version)\n", name))
               cat(errs, sep = "\n\n")
               cat("\n::endgroup::\n")
+            }
+          }
+          ## An incomplete check's install or timeout error is only in
+          ## failures.md; print it so the log says why without the artifact.
+          if (any(grepl("did not complete", bad)) && file.exists("revdep/failures.md")) {
+            cat("::group::revdep/failures.md\n")
+            writeLines(readLines("revdep/failures.md", warn = FALSE))
+            cat("::endgroup::\n")
+            ## failures.md omits why a check result could not be read.
+            for (item in grep("did not complete", bad, value = TRUE)) {
+              name <- sub(":.*", "", item)
+              rows <- revdepcheck:::db_get_results(".", name)
+              for (which in c("old", "new")) {
+                row <- rows[[which]]
+                cat(sprintf("::group::%s (%s): stored status %s\n", name, which,
+                            if (nrow(row)) row$status else "none"))
+                if (nrow(row)) cat(substr(row$result, 1, 3000), "\n")
+                cat("::endgroup::\n")
+              }
             }
           }
           if (length(bad)) {
