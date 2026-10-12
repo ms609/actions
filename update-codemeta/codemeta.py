@@ -24,6 +24,8 @@ import sys
 import time
 import urllib.request
 
+USER_AGENT = "ms609-actions-update-codemeta (+https://github.com/ms609/actions)"
+
 BASE_PACKAGES = {
     "R", "base", "compiler", "datasets", "graphics", "grDevices", "grid",
     "methods", "parallel", "splines", "stats", "stats4", "tcltk", "tools",
@@ -433,16 +435,30 @@ class Providers:
                     self.known[e["identifier"]] = provider
 
     def packages(self, url):
+        """Names of packages in a repository's index.
+
+        An index that cannot be read (e.g. a server refusing the runner with
+        HTTP 403) is treated as empty, with a warning, rather than failing the
+        run: dependencies listed in it go without a provider, and providers
+        already recorded in codemeta.json are kept.
+        """
         if url not in self.cache:
+            text = ""
+            request = urllib.request.Request(
+                url + "/src/contrib/PACKAGES.gz",
+                headers={"User-Agent": USER_AGENT})
             for attempt in range(4):
                 try:
-                    with urllib.request.urlopen(url + "/src/contrib/PACKAGES.gz",
-                                                timeout=60) as r:
+                    with urllib.request.urlopen(request, timeout=60) as r:
                         text = gzip.decompress(r.read()).decode("utf-8", "replace")
                     break
-                except OSError:
-                    if attempt == 3:
-                        raise
+                except OSError as e:
+                    # A refusal will not change on retry; a 429 or 5xx might
+                    code = getattr(e, "code", None)
+                    if attempt == 3 or (code is not None and 400 <= code < 500
+                                        and code != 429):
+                        print(f"::warning::Could not read {request.full_url}: {e}")
+                        break
                     time.sleep(10 * 2 ** attempt)
             self.cache[url] = set(re.findall(r"^Package:\s*(\S+)", text, re.M))
         return self.cache[url]
