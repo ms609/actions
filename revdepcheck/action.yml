@@ -148,6 +148,24 @@ runs:
             checkDone(state, worker)
           }, "revdepcheck")
 
+          ## revdepcheck runs a revdep's old and new checks at the same
+          ## time, and both share the runner's user cache. A revdep that
+          ## caches downloads there (e.g. orthogene, ~/.cache/R/orthogene)
+          ## can then read the other check's half-written file and fail
+          ## at random -- in either version, so it can look like a new
+          ## problem. Give each check its own cache directory.
+          checkProc <- get("check_proc", ns)
+          utils::assignInNamespace("check_proc", function(pkgdir, pkgname,
+                                                          version = c("old", "new"),
+                                                          env = character()) {
+            version <- match.arg(version)
+            cache <- file.path(tempdir(), "revdep-cache", pkgname, version)
+            dir.create(cache, recursive = TRUE, showWarnings = FALSE)
+            checkProc(pkgdir, pkgname, version = version,
+                      env = c(env, R_USER_CACHE_DIR = cache,
+                              XDG_CACHE_HOME = cache))
+          }, "revdepcheck")
+
           RunChecks <- function() {
             revdepcheck::revdep_check(timeout = as.difftime(60, units = 'mins'),
                                       num_workers = 3,
@@ -187,6 +205,36 @@ runs:
               libs <- unique(dirname(dirname(list.files(
                 "revdep/library", pattern = "^DESCRIPTION$", recursive = TRUE,
                 full.names = TRUE))))
+
+              ## A dependency that fails to *install* (PREPERROR) leaves no
+              ## check output to parse, and revdepcheck deletes that
+              ## revdep's library. So reinstall each package that failed
+              ## into a scratch library, where its shared objects -- and
+              ## those of its dependencies -- can be inspected below.
+              ## (E.g. ggimage built from source lazy-loads magick, whose
+              ## P3M binary needs libMagick++.)
+              prepFailed <- unique(unlist(lapply(retry, function(name) {
+                rows <- revdepcheck:::db_get_results(".", name)
+                txt <- paste(unlist(lapply(rows, function(row)
+                  if (nrow(row)) row$result)), collapse = "\n")
+                txt <- gsub("\\\\u201[89]", "'", txt)
+                m <- regmatches(txt, gregexpr(
+                  "installation of package ['\u2018\u2019\"]?[A-Za-z][A-Za-z0-9.]*",
+                  txt, perl = TRUE))[[1]]
+                sub(".*['\u2018\u2019\" ]", "", m)
+              })))
+              if (length(prepFailed)) {
+                message("Reinstalling to find missing libraries: ",
+                        paste(prepFailed, collapse = ", "))
+                scratch <- tempfile("revdep-sysreqs-")
+                dir.create(scratch)
+                tryCatch(suppressWarnings(utils::install.packages(
+                  prepFailed, lib = scratch, quiet = TRUE,
+                  repos = revdepcheck:::get_repos(bioc = TRUE, cran = TRUE))),
+                  error = function(e) message("Reinstall failed: ",
+                                              conditionMessage(e)))
+                libs <- c(libs, scratch)
+              }
               for (lib in libs) tryCatch(
                 pak::sysreqs_fix_installed(library = lib),
                 error = function(e) warning("System requirements of ", lib,
@@ -195,12 +243,24 @@ runs:
 
               ## pak's rules can lag a new Ubuntu release (e.g. ImageMagick
               ## on 26.04), so also install whichever apt package provides
-              ## each shared library that a check could not load.
+              ## each shared library that a check could not load...
               errs <- unlist(lapply(revdepcheck::revdep_summary()[retry],
                                     EnvErrors))
               sharedLibs <- unique(unlist(regmatches(errs, gregexpr(
                 "[^ /:'\u2018\u2019]+\\.so[.0-9]*(?=: cannot open shared object file)",
                 errs, perl = TRUE))))
+              ## ...and each library that an installed shared object cannot
+              ## find, including in the scratch library above.
+              sharedObjects <- list.files(unique(c(libs, .libPaths())),
+                                          pattern = "\\.so$", recursive = TRUE,
+                                          full.names = TRUE)
+              lddOut <- unlist(lapply(sharedObjects, function(so) tryCatch(
+                suppressWarnings(system2("ldd", so, stdout = TRUE,
+                                         stderr = FALSE)),
+                error = function(e) character(0))))
+              unresolved <- trimws(sub("=>.*", "", grep("=> not found", lddOut,
+                                                        value = TRUE)))
+              sharedLibs <- unique(c(sharedLibs, setdiff(unresolved, "libR.so")))
               if (length(sharedLibs)) tryCatch({
                 sudo <- if (Sys.info()[["effective_user"]] == "root") "" else "sudo "
                 system(paste0(sudo, "apt-get -y install apt-file"))
